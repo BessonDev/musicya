@@ -1,0 +1,29 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      - PORT=8000
+    volumes:
+      - yt_cache:/root/.cache/yt-dlp
+    restart: unless-stopped
+    networks:
+      - musicya
+
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./dist:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - musicya
+
+networks:
+  musicya:
+
+volumes:
+  yt_cache:
