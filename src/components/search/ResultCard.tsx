@@ -1,7 +1,6 @@
 import { useCallback } from 'react'
 import type { Track } from '@/types'
 import { usePlayerStore } from '@/stores/usePlayerStore'
-import { useAudioPlayer } from '@/hooks/useAudioPlayer'
 import { DownloadButton } from '@/components/download'
 
 interface ResultCardProps {
@@ -11,31 +10,34 @@ interface ResultCardProps {
 /**
  * Tarjeta individual de resultado de búsqueda
  * Muestra: thumbnail, título, artista, duración, botón de preview
+ *
+ * NO usa useAudioPlayer — el audio lo maneja exclusivamente
+ * el footer (AudioPlayer) para evitar duplicación de Howl.
+ * Acá solo interactuamos con el store.
  */
 export function ResultCard({ track }: ResultCardProps) {
-  const { currentTrack, isPlaying, setCurrentTrack, play, pause } = usePlayerStore()
-  const { play: playAudio, pause: pauseAudio } = useAudioPlayer()
+  const { currentTrack, isPlaying, setCurrentTrack } = usePlayerStore()
 
   const isCurrentTrack = currentTrack?.id === track.id
   const isPlayingThis = isCurrentTrack && isPlaying
 
   const handlePlayPause = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
+    const { isPlaying: currentlyPlaying, play, pause } = usePlayerStore.getState()
 
-    if (isCurrentTrack) {
-      if (isPlaying) {
-        pauseAudio()
+    if (currentTrack?.id === track.id) {
+      // Mismo track → toggle play/pause via store.
+      // El hook en AudioPlayer reacciona al cambio de isPlaying.
+      if (currentlyPlaying) {
         pause()
       } else {
-        playAudio()
         play()
       }
     } else {
+      // Track diferente → solo seteamos, el hook auto-reproduce
       setCurrentTrack(track)
-      playAudio()
-      play()
     }
-  }, [isCurrentTrack, isPlaying, track, setCurrentTrack, playAudio, pauseAudio, play, pause])
+  }, [track, setCurrentTrack])
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60)

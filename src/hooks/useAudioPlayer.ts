@@ -4,7 +4,10 @@ import { usePlayerStore } from '@/stores/usePlayerStore'
 
 /**
  * Hook para manejar reproducción de audio con Howler.js
- * Asegura que solo un track reproduzca a la vez
+ *
+ * - Cuando cambia `currentTrack`, reproduce automáticamente el nuevo track.
+ * - Sincroniza el estado `isPlaying` con el estado real del Howl.
+ * - Si el usuario hizo pause y cambia de track, el nuevo también arranca solo.
  */
 export function useAudioPlayer() {
   const howlRef = useRef<Howl | null>(null)
@@ -19,7 +22,11 @@ export function useAudioPlayer() {
     isMuted,
   } = usePlayerStore()
 
-  // Cleanup cuando el track cambia
+  // Creamos la cb updateProgress una sola vez con ref estable
+  const updateProgressRef = useRef<() => void>(() => {})
+  const progressLoopIdRef = useRef<number | null>(null)
+
+  // Gestiona el track actual: limpia el anterior, crea el nuevo, y auto-play
   useEffect(() => {
     if (!currentTrack) {
       if (howlRef.current) {
@@ -27,10 +34,13 @@ export function useAudioPlayer() {
         howlRef.current = null
         trackIdRef.current = null
       }
+      setIsPlaying(false)
+      setProgress(0)
+      setDuration(0)
       return
     }
 
-    // Si ya estamos reproduciendo este track, no crear nuevo
+    // Si es el mismo track, no hacer nada
     if (trackIdRef.current === currentTrack.id && howlRef.current) {
       return
     }
@@ -39,29 +49,36 @@ export function useAudioPlayer() {
     if (howlRef.current) {
       howlRef.current.unload()
     }
+    if (progressLoopIdRef.current !== null) {
+      cancelAnimationFrame(progressLoopIdRef.current)
+      progressLoopIdRef.current = null
+    }
 
-    // Crear nuevo Howl para el track
+    // Crear nuevo Howl
     const howl = new Howl({
       src: [currentTrack.previewUrl],
-      html5: true, // Usar HTML5 Audio para streams grandes
+      html5: true,
       volume: isMuted ? 0 : volume / 100,
       onload: () => {
         setDuration(howl.duration())
       },
       onplay: () => {
         setIsPlaying(true)
-        updateProgress()
+        loopProgress()
       },
       onpause: () => {
         setIsPlaying(false)
+        cancelProgress()
       },
       onstop: () => {
         setIsPlaying(false)
         setProgress(0)
+        cancelProgress()
       },
       onend: () => {
         setIsPlaying(false)
         setProgress(0)
+        cancelProgress()
       },
       onloaderror: (_id, error) => {
         console.error('Error loading audio:', error)
@@ -75,6 +92,9 @@ export function useAudioPlayer() {
 
     howlRef.current = howl
     trackIdRef.current = currentTrack.id
+
+    // ► Auto-play: el nuevo track arranca apenas se crea
+    howl.play()
   }, [currentTrack, setDuration, setIsPlaying, setProgress])
 
   // Actualizar volumen cuando cambie
@@ -84,14 +104,39 @@ export function useAudioPlayer() {
     }
   }, [volume, isMuted])
 
-  // Intervalo para actualizar progress
-  const updateProgress = useCallback(() => {
-    if (howlRef.current && howlRef.current.playing()) {
-      setProgress(howlRef.current.seek() as number)
-      requestAnimationFrame(updateProgress)
+  // Sincronizar isPlaying del store con el Howl.
+  // Permite que ResultCard haga store.play()/pause() y el Howl reaccione.
+  const isPlaying = usePlayerStore((s) => s.isPlaying)
+  useEffect(() => {
+    if (!howlRef.current) return
+    const howl = howlRef.current
+    if (isPlaying && !howl.playing()) {
+      howl.play()
+    } else if (!isPlaying && howl.playing()) {
+      howl.pause()
     }
+  }, [isPlaying])
+
+  // Bucle de progreso con requestAnimationFrame
+  const loopProgress = useCallback(() => {
+    const tick = () => {
+      if (howlRef.current && howlRef.current.playing()) {
+        setProgress(howlRef.current.seek() as number)
+        progressLoopIdRef.current = requestAnimationFrame(tick)
+      }
+    }
+    cancelProgress()
+    progressLoopIdRef.current = requestAnimationFrame(tick)
   }, [setProgress])
 
+  const cancelProgress = useCallback(() => {
+    if (progressLoopIdRef.current !== null) {
+      cancelAnimationFrame(progressLoopIdRef.current)
+      progressLoopIdRef.current = null
+    }
+  }, [])
+
+  // Play manual (para reanudar después de pause)
   const play = useCallback(() => {
     if (howlRef.current) {
       howlRef.current.play()
