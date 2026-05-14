@@ -6,6 +6,8 @@ Last updated: 2026-05-14
 
 ## Sources scanned
 
+- .claude\skills
+- .agents\skills
 - C:\Users\bessondev\.config\opencode\skills
 - C:\Users\bessondev\.claude\skills
 - C:\Users\bessondev\.gemini\skills
@@ -18,6 +20,12 @@ Last updated: 2026-05-14
 Subagents still read their assigned executor/phase skill. During normal runtime, they do **not** independently discover or load additional project/user `SKILL.md` files or this registry; project/user rules arrive pre-digested. Explicit fallback loading is degraded self-healing and must be reported in `skill_resolution` as `fallback-registry` or `fallback-path`.
 
 ## Selected skills and compact rules
+
+### accessibility
+- Path: C:\Users\bessondev\Desktop\code\musicya-app\.claude\skills\accessibility\SKILL.md
+- Trigger: Audit and improve web accessibility following WCAG 2.2 guidelines. Use when asked to "improve accessibility", "a11y audit", "WCAG compliance", "screen reader support", "keyboard navigation", or "make accessible".
+- Rules:
+  - No compact rules declared; delegators should load the full skill file before direct work, or pass an explicit fallback path only when Project Standards cannot be injected.
 
 ### branch-pr
 - Path: C:\Users\bessondev\.config\opencode\skills\branch-pr\SKILL.md
@@ -71,6 +79,12 @@ Subagents still read their assigned executor/phase skill. During normal runtime,
   - Match thread language: Write in the thread/user language. If writing in Spanish, use Rioplatense Spanish/voseo: `podés`, `tenés`, `fijate`, `dale`.
   - No em dashes: Use commas, periods, or parentheses instead.
 
+### frontend-design
+- Path: C:\Users\bessondev\Desktop\code\musicya-app\.claude\skills\frontend-design\SKILL.md
+- Trigger: Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, artifacts, posters, or applications (examples include websites, landing pages, dashboards, React components, HTML/CSS layouts, or when styling/beautifying any web UI). Generates creative, polished code and UI design that avoids generic AI aesthetics.
+- Rules:
+  - No compact rules declared; delegators should load the full skill file before direct work, or pass an explicit fallback path only when Project Standards cannot be injected.
+
 ### go-testing
 - Path: C:\Users\bessondev\.config\opencode\skills\go-testing\SKILL.md
 - Trigger: Trigger: Go tests, go test coverage, Bubbletea teatest, golden files. Apply focused Go testing patterns.
@@ -119,6 +133,24 @@ Subagents still read their assigned executor/phase skill. During normal runtime,
   - Judges contradict: Escalate for manual decision.
   - Round 2+ has only theoretical warnings/suggestions: Report as INFO; do not re-judge.
 
+### nodejs-backend-patterns
+- Path: C:\Users\bessondev\Desktop\code\musicya-app\.claude\skills\nodejs-backend-patterns\SKILL.md
+- Trigger: Build production-ready Node.js backend services with Express/Fastify, implementing middleware patterns, error handling, authentication, database integration, and API design best practices. Use when creating Node.js servers, REST APIs, GraphQL backends, or microservices architectures.
+- Rules:
+  - No compact rules declared; delegators should load the full skill file before direct work, or pass an explicit fallback path only when Project Standards cannot be injected.
+
+### nodejs-best-practices
+- Path: C:\Users\bessondev\Desktop\code\musicya-app\.claude\skills\nodejs-best-practices\SKILL.md
+- Trigger: Node.js development principles and decision-making. Framework selection, async patterns, security, and architecture. Teaches thinking, not copying.
+- Rules:
+  - No compact rules declared; delegators should load the full skill file before direct work, or pass an explicit fallback path only when Project Standards cannot be injected.
+
+### seo
+- Path: C:\Users\bessondev\Desktop\code\musicya-app\.claude\skills\seo\SKILL.md
+- Trigger: Optimize for search engine visibility and ranking. Use when asked to "improve SEO", "optimize for search", "fix meta tags", "add structured data", "sitemap optimization", or "search engine optimization".
+- Rules:
+  - No compact rules declared; delegators should load the full skill file before direct work, or pass an explicit fallback path only when Project Standards cannot be injected.
+
 ### skill-creator
 - Path: C:\Users\bessondev\.config\opencode\skills\skill-creator\SKILL.md
 - Trigger: Trigger: new skills, agent instructions, documenting AI usage patterns. Create LLM-first skills with valid frontmatter.
@@ -134,6 +166,35 @@ Subagents still read their assigned executor/phase skill. During normal runtime,
   - Conceptual detail, edge cases, existing docs: Put local links in `references/`
   - Long explanation in `SKILL.md`: Move it to a supporting file
   - Multiple meaningful paths: Add a compact decision table
+
+### tailwind-css-patterns
+- Path: C:\Users\bessondev\Desktop\code\musicya-app\.claude\skills\tailwind-css-patterns\SKILL.md
+- Trigger: Provides comprehensive Tailwind CSS utility-first styling patterns including responsive design, layout utilities, flexbox, grid, spacing, typography, colors, and modern CSS best practices. Use when styling React/Vue/Svelte components, building responsive layouts, implementing design systems, or optimizing CSS workflow.
+- Rules:
+  - No compact rules declared; delegators should load the full skill file before direct work, or pass an explicit fallback path only when Project Standards cannot be injected.
+
+### typescript-advanced-types
+- Path: C:\Users\bessondev\Desktop\code\musicya-app\.claude\skills\typescript-advanced-types\SKILL.md
+- Trigger: Master TypeScript's advanced type system including generics, conditional types, mapped types, template literals, and utility types for building type-safe applications. Use when implementing complex type logic, creating reusable type utilities, or ensuring compile-time type safety in TypeScript projects.
+- Rules:
+  - No compact rules declared; delegators should load the full skill file before direct work, or pass an explicit fallback path only when Project Standards cannot be injected.
+
+### vercel-composition-patterns
+- Path: C:\Users\bessondev\Desktop\code\musicya-app\.claude\skills\composition-patterns\SKILL.md
+- Rules:
+  - No compact rules declared; delegators should load the full skill file before direct work, or pass an explicit fallback path only when Project Standards cannot be injected.
+
+### vercel-react-best-practices
+- Path: C:\Users\bessondev\Desktop\code\musicya-app\.claude\skills\react-best-practices\SKILL.md
+- Trigger: React and Next.js performance optimization guidelines from Vercel Engineering. This skill should be used when writing, reviewing, or refactoring React/Next.js code to ensure optimal performance patterns. Triggers on tasks involving React components, Next.js pages, data fetching, bundle optimization, or performance improvements.
+- Rules:
+  - No compact rules declared; delegators should load the full skill file before direct work, or pass an explicit fallback path only when Project Standards cannot be injected.
+
+### vite
+- Path: C:\Users\bessondev\Desktop\code\musicya-app\.claude\skills\vite\SKILL.md
+- Trigger: Vite build tool configuration, plugin API, SSR, and Vite 8 Rolldown migration. Use when working with Vite projects, vite.config.ts, Vite plugins, or building libraries/SSR apps with Vite.
+- Rules:
+  - No compact rules declared; delegators should load the full skill file before direct work, or pass an explicit fallback path only when Project Standards cannot be injected.
 
 ### work-unit-commits
 - Path: C:\Users\bessondev\.config\opencode\skills\work-unit-commits\SKILL.md
