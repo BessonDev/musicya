@@ -2,8 +2,7 @@ import { useDownloadStore } from '@/stores/useDownloadStore'
 import type { DownloadQuality } from '@/types'
 
 const QUALITIES: { value: DownloadQuality; label: string; description: string }[] = [
-  { value: 192, label: '192 kbps', description: 'Menor tamaño' },
-  { value: 256, label: '256 kbps', description: 'Equilibrado' },
+  { value: 128, label: '128 kbps', description: 'Menor tamaño' },
   { value: 320, label: '320 kbps', description: 'Máxima calidad' },
 ]
 

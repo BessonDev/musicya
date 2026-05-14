@@ -1,4 +1,4 @@
-export type DownloadQuality = 192 | 256 | 320
+export type DownloadQuality = 128 | 320
 
 export type DownloadStatus = 'idle' | 'downloading' | 'completed' | 'error' | 'cancelled'
 

@@ -68,12 +68,12 @@ export function ResultCard({ track }: ResultCardProps) {
           </div>
         )}
 
-        {/* Play button overlay */}
+        {/* Play button overlay - siempre visible */}
         <button
           onClick={handlePlayPause}
           className="absolute inset-0 flex items-center justify-center
-                     bg-black/40 opacity-0 group-hover:opacity-100
-                     transition-opacity duration-200"
+                     bg-black/40 hover:bg-black/50 transition-colors duration-200
+                     cursor-pointer"
         >
           <div className={`w-14 h-14 rounded-full flex items-center justify-center
                           ${isPlayingThis ? 'bg-primary' : 'bg-primary/90'}
