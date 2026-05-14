@@ -62,6 +62,7 @@ async def download_audio(artist: str, title: str) -> tuple[str, str]:
             "-o", output_template,
             "--no-playlist",
             "--print", "filename",
+            "--extractor-args", "youtube:player_client=android,web",
             "--", query,
         ], timeout=DOWNLOAD_TIMEOUT)
 
