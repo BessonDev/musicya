@@ -1,4 +1,5 @@
 import { usePlayerStore } from '@/stores/usePlayerStore'
+import { useAudioPlayer } from '@/hooks/useAudioPlayer'
 import { PlayerControls } from './PlayerControls'
 import { ProgressBar } from './ProgressBar'
 import { VolumeControl } from './VolumeControl'
@@ -6,9 +7,14 @@ import { VolumeControl } from './VolumeControl'
 /**
  * Player expandido en footer con controles completos
  * Solo visible cuando hay un track seleccionado
+ *
+ * Único componente que llama a useAudioPlayer() para tener
+ * UNA sola instancia de Howl. Pasa las acciones como props
+ * a PlayerControls y ProgressBar.
  */
 export function AudioPlayer() {
   const { currentTrack } = usePlayerStore()
+  const { play, pause, stop, seek } = useAudioPlayer()
 
   if (!currentTrack) {
     return null
@@ -45,9 +51,9 @@ export function AudioPlayer() {
 
         {/* Center: Controls + Progress */}
         <div className="flex-1 flex flex-col items-center gap-2">
-          <PlayerControls />
+          <PlayerControls play={play} pause={pause} stop={stop} />
           <div className="w-full max-w-xl">
-            <ProgressBar />
+            <ProgressBar seek={seek} />
           </div>
         </div>
 

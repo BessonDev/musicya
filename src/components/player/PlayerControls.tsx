@@ -1,12 +1,17 @@
 import { usePlayerStore } from '@/stores/usePlayerStore'
-import { useAudioPlayer } from '@/hooks/useAudioPlayer'
+
+interface PlayerControlsProps {
+  play: () => void
+  pause: () => void
+  stop: () => void
+}
 
 /**
  * Controles del player: play/pause, prev, next
+ * Recibe las acciones por props desde AudioPlayer (único dueño del Howl).
  */
-export function PlayerControls() {
+export function PlayerControls({ play, pause, stop }: PlayerControlsProps) {
   const { isPlaying, currentTrack } = usePlayerStore()
-  const { play, pause, stop } = useAudioPlayer()
 
   const handlePlayPause = () => {
     if (!currentTrack) return

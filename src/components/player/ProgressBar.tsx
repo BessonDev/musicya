@@ -1,14 +1,16 @@
 import { useCallback, useRef } from 'react'
 import { usePlayerStore } from '@/stores/usePlayerStore'
-import { useAudioPlayer } from '@/hooks/useAudioPlayer'
+
+interface ProgressBarProps {
+  seek: (time: number) => void
+}
 
 /**
  * Barra de progreso clickeable con time display
- * Actualiza cada 100ms el progress
+ * Recibe seek por props desde AudioPlayer (único dueño del Howl).
  */
-export function ProgressBar() {
+export function ProgressBar({ seek }: ProgressBarProps) {
   const { progress, duration } = usePlayerStore()
-  const { seek } = useAudioPlayer()
   const progressRef = useRef<HTMLDivElement>(null)
 
   const formatTime = (seconds: number) => {
