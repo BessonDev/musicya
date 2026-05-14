@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import type { Track } from '@/types'
 import { useDownloadStore } from '@/stores/useDownloadStore'
-import { downloadTrack } from '@/services/downloadService'
+import { downloadTrack, generateFilename } from '@/services/downloadService'
 
 interface DownloadButtonProps {
   track: Track
@@ -40,9 +40,8 @@ export function DownloadButton({ track, compact = false }: DownloadButtonProps) 
         updateProgress(10 + p * 0.9)
       })
 
-      // Crear URL de descarga
       const url = URL.createObjectURL(blob)
-      const filename = `${track.artist} - ${track.title}.mp3`
+      const filename = generateFilename(track)
 
       // Crear elemento <a> para descargar
       const a = document.createElement('a')

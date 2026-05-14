@@ -1,13 +1,8 @@
 import type { Track, DownloadQuality } from '@/types'
+import { writeId3Tags } from './id3Writer'
 
 type ProgressCallback = (progress: number) => void
 
-/**
- * Descarga un track como Blob
- * NOTA: iTunes solo proporciona previews en formato AAC 128kbps.
- * La selección de calidad es una preferencia UI que se usará cuando
- * se implemente un backend con diferentes calidades.
- */
 export async function downloadTrack(
   track: Track,
   _quality: DownloadQuality,
@@ -40,9 +35,7 @@ export async function downloadTrack(
     while (true) {
       const { done, value } = await reader.read()
 
-      if (done) {
-        break
-      }
+      if (done) break
 
       if (value) {
         chunks.push(value)
@@ -54,7 +47,6 @@ export async function downloadTrack(
       }
     }
 
-    // Combinar todos los chunks
     const allChunks = new Uint8Array(received)
     let position = 0
     for (const chunk of chunks) {
@@ -64,85 +56,35 @@ export async function downloadTrack(
 
     onProgress?.(100)
 
-    // Determinar tipo MIME del contenido
     const contentType = response.headers.get('content-type') || 'audio/mp4'
+    const audioBlob = new Blob([allChunks], { type: contentType })
 
-    return new Blob([allChunks], { type: contentType })
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error
+    let coverBlob: Blob | null = null
+    if (track.coverUrl) {
+      try {
+        const coverResp = await fetch(track.coverUrl)
+        if (coverResp.ok) {
+          coverBlob = await coverResp.blob()
+        }
+      } catch {
+        // Cover es opcional
+      }
     }
+
+    onProgress?.(95)
+
+    const taggedBlob = await writeId3Tags(audioBlob, track, coverBlob)
+
+    onProgress?.(100)
+    return taggedBlob
+  } catch (error) {
+    if (error instanceof Error) throw error
     throw new Error('Error desconocido al descargar')
   }
 }
 
-/**
- * Descarga la imagen de portada como Blob
- */
-export async function downloadCoverArt(url: string): Promise<Blob | null> {
-  if (!url) return null
-
-  try {
-    const response = await fetch(url)
-
-    if (!response.ok) {
-      return null
-    }
-
-    return await response.blob()
-  } catch {
-    return null
-  }
-}
-
-/**
- * Genera un nombre de archivo válido para la descarga
- */
 export function generateFilename(track: Track): string {
-  // Limpiar caracteres no válidos
   const cleanArtist = track.artist.replace(/[<>:"/\\|?*]/g, '').trim()
   const cleanTitle = track.title.replace(/[<>:"/\\|?*]/g, '').trim()
-
   return `${cleanArtist} - ${cleanTitle}.mp3`
-}
-
-/**
- * ID3 Metadata Embedding (PLACEHOLDER)
- * 
- * Esta función es un placeholder para implementación futura.
- * Actualmente, iTunes proporciona previews en formato AAC (.m4a),
- * no MP3, por lo que escribir metadatos ID3 requiere transcodificación.
- * 
- * Para implementar en el futuro:
- * 1. Usar un Web Worker con ffmpeg.wasm para transcodificar a MP3
- * 2. Usar jsmediatags o id3-writer para escribir tags ID3v2.3
- * 3. Embed cover art como frame APIC
- * 
- * Alternativa temporal: guardar metadata en archivo JSON sidecar
- */
-export async function embedId3Metadata(
-  _audioBlob: Blob,
-  _track: Track,
-  _coverBlob?: Blob
-): Promise<Blob> {
-  // TODO: Implementar cuando se tenga capacidad de transcodificación en browser
-  // Por ahora, retornamos el blob original
-  console.warn('ID3 embedding not yet implemented - returning original blob')
-  return _audioBlob
-}
-
-/**
- * Crea un archivo descargable desde un Blob
- */
-export function createDownloadLink(blob: Blob, filename: string): string {
-  const url = URL.createObjectURL(blob)
-  
-  // Opcional: crear enlace y autoseleccionar para descargar
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.style.display = 'none'
-  document.body.appendChild(a)
-  
-  return url
 }
