@@ -1,6 +1,9 @@
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        CACHEBUST: "20260514-v2"
     environment:
       - PORT=8000
     volumes:
