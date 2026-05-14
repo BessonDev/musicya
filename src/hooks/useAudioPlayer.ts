@@ -22,8 +22,6 @@ export function useAudioPlayer() {
     isMuted,
   } = usePlayerStore()
 
-  // Creamos la cb updateProgress una sola vez con ref estable
-  const updateProgressRef = useRef<() => void>(() => {})
   const progressLoopIdRef = useRef<number | null>(null)
 
   // Gestiona el track actual: limpia el anterior, crea el nuevo, y auto-play
