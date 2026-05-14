@@ -21,7 +21,8 @@ export function HomePage() {
               Musicya
             </h1>
             <p className="text-zinc-500 text-sm mt-1">
-              Descarga música MP3 gratis
+              Descarga música gratis en alta calidad.
+              by <a href="https://bessondev.com">bessondev</a>
             </p>
           </div>
 
