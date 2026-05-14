@@ -1,17 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockTrack = {
-  trackId: 3135556,
-  trackName: 'Without Me',
-  artistName: 'Eminem',
-  collectionName: 'The Eminem Show',
+  id: '3135556',
+  title: 'Without Me',
+  artist: 'Eminem',
+  album: 'The Eminem Show',
+  duration: 290,
   previewUrl: 'https://audio-ssl.itunes.apple.com/preview.m4a',
-  artworkUrl100: 'https://is1-ssl.mzstatic.com/image/100x100.jpg',
-  trackTimeMillis: 290120,
-  primaryGenreName: 'Hip-Hop/Rap',
-  releaseDate: '2002-05-14T07:00:00Z',
-  trackNumber: 9,
-  collectionId: 1440821542,
+  coverUrl: 'https://is1-ssl.mzstatic.com/image/300x300.jpg',
+  coverSmall: 'https://is1-ssl.mzstatic.com/image/100x100.jpg',
+  coverMedium: 'https://is1-ssl.mzstatic.com/image/300x300.jpg',
+  coverBig: 'https://is1-ssl.mzstatic.com/image/600x600.jpg',
+  genre: 'Hip-Hop/Rap',
+  year: 2002,
 }
 
 describe('searchTracks', () => {
@@ -29,7 +30,6 @@ describe('searchTracks', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({
-        resultCount: 1,
         results: [mockTrack],
       }),
     })
@@ -43,7 +43,8 @@ describe('searchTracks', () => {
     expect(result[0].album).toBe('The Eminem Show')
     expect(result[0].duration).toBe(290)
     expect(result[0].previewUrl).toBe(mockTrack.previewUrl)
-    expect(result[0].coverUrl).toBe('https://is1-ssl.mzstatic.com/image/300x300.jpg')
+    expect(result[0].coverUrl).toBe(mockTrack.coverUrl)
+    expect(result[0].coverSmall).toBe(mockTrack.coverSmall)
     expect(result[0].year).toBe(2002)
     expect(result[0].genre).toBe('Hip-Hop/Rap')
   })
