@@ -5,19 +5,20 @@
 <h1 align="center">Musicya</h1>
 
 <p align="center">
-  <strong>Busca, previsualiza y descarga música MP3 en alta calidad.</strong>
+  <strong>Busca y descarga canciones completas en MP3 con metadatos incluidos.</strong>
   <br />
-  App web moderna construida con React + TypeScript + Vite.
+  App web full-stack: React + TypeScript frontend, Python/FastAPI backend con yt-dlp.
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/react-^18.x-%236366f1?logo=react" alt="React" />
   <img src="https://img.shields.io/badge/typescript-~5.6-%233178C6?logo=typescript" alt="TypeScript" />
   <img src="https://img.shields.io/badge/vite-^6.x-%23646CFF?logo=vite" alt="Vite" />
-  <img src="https://img.shields.io/badge/zustand-^5.x-%23E34F26" alt="Zustand" />
-  <img src="https://img.shields.io/badge/tailwind-^3.x-%2306B6D4?logo=tailwindcss" alt="Tailwind" />
+  <img src="https://img.shields.io/badge/python-3.12-%233776AB?logo=python" alt="Python" />
+  <img src="https://img.shields.io/badge/fastapi-0.115-%23009688?logo=fastapi" alt="FastAPI" />
   <br />
   <img src="https://img.shields.io/badge/vitest-^4.x-6E9F18?logo=vitest" alt="Vitest" />
+  <img src="https://img.shields.io/badge/docker-compose-%232496ED?logo=docker" alt="Docker" />
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License" />
 </p>
 
@@ -25,12 +26,14 @@
 
 ## ✨ Características
 
-- **Búsqueda inteligente** — Encuentra canciones por artista, título o álbum vía iTunes API.
+- **Búsqueda inteligente** — Encuentra canciones por artista, título o álbum vía iTunes API (proxy por backend).
 - **Preview de 30s** — Reproduce fragmentos con Howler.js antes de descargar.
-- **Calidad seleccionable** — Elige entre 192, 256 o 320 kbps.
+- **Canciones completas** — Descarga la canción completa desde YouTube vía yt-dlp.
+- **Calidad seleccionable** — Elige entre 128 o 320 kbps.
 - **Metadatos ID3** — Los archivos descargados incluyen título, artista, álbum, año, género y carátula embebida.
 - **Interfaz oscura** — Diseño minimalista y moderno con Tailwind CSS.
 - **Responsive** — Adaptado a mobile, tablet y desktop.
+- **Dockerizado** — Listo para deploy en Dokploy o cualquier VPS con Docker.
 
 ## 🚀 Stack
 
@@ -41,31 +44,88 @@
 | Estado | Zustand 5 |
 | UI | Tailwind CSS 3 |
 | Audio | Howler.js |
-| API | iTunes Search (proxy Vite) |
-| Testing | Vitest + jsdom |
+| Backend | Python 3.12, FastAPI |
+| Descargas | yt-dlp + FFmpeg |
+| Metadatos | mutagen (ID3v2.3) |
+| Proxy API | httpx (async iTunes client) |
+| Deploy | Docker Compose + Nginx |
+| Testing | Vitest + jsdom (frontend) |
 
-## 📦 Instalación
+## 📦 Instalación y desarrollo local
+
+### Backend
 
 ```bash
-# Clonar el repositorio
-git clone https://github.com/tu-usuario/musicya-app.git
-cd musicya-app
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
 
-# Instalar dependencias
+> Requiere [yt-dlp](https://github.com/yt-dlp/yt-dlp) y [FFmpeg](https://ffmpeg.org/) instalados en el sistema.
+>
+> **Windows:**
+> ```bash
+> winget install yt-dlp.yt-dlp
+> winget install ffmpeg
+> ```
+>
+> **Linux/macOS:**
+> ```bash
+> # Ubuntu/Debian
+> sudo apt install yt-dlp ffmpeg
+> # macOS
+> brew install yt-dlp ffmpeg
+> ```
+
+### Frontend
+
+```bash
 npm install
-
-# Iniciar servidor de desarrollo
 npm run dev
 ```
 
-La app estará disponible en `http://localhost:5173`.
+La app estará disponible en `http://localhost:5173`. El frontend proxy automáticamente `/api` al backend en `localhost:8000`.
+
+## 🐳 Deploy con Dokploy
+
+### 1. Push a GitHub
+
+```bash
+git push origin main
+```
+
+### 2. Conectar en Dokploy
+
+1. Crear un nuevo proyecto en Dokploy
+2. Conectar el repositorio de GitHub
+3. Seleccionar **Docker Compose** como tipo de deploy
+4. Dokploy usa el `docker-compose.yml` del repositorio
+
+Esto construye:
+- **backend**: Python/FastAPI con yt-dlp + FFmpeg
+- **frontend**: Multi-stage Dockerfile que buildea Vite y sirve con Nginx
+
+La app queda accesible en el puerto `80`.
+
+### Alternativa: deploy manual con Docker Compose
+
+```bash
+# Build y levantar todo
+docker compose up -d
+
+# Ver logs
+docker compose logs -f
+
+# Detener
+docker compose down
+```
 
 ## 📋 Scripts
 
 | Comando | Descripción |
 |---------|-------------|
 | `npm run dev` | Servidor de desarrollo con HMR |
-| `npm run build` | Compilar para producción |
+| `npm run build` | Compilar frontend para producción |
 | `npm run preview` | Vista previa del build |
 | `npm test` | Ejecutar tests unitarios |
 | `npm run test:watch` | Tests en modo watch |
@@ -73,17 +133,47 @@ La app estará disponible en `http://localhost:5173`.
 ## 🏗️ Estructura
 
 ```
-src/
-├── components/
-│   ├── search/      # Input, resultados, tarjetas
-│   ├── player/      # Reproductor, controles
-│   └── download/    # Selector calidad, botón descarga
-├── hooks/           # useAudioPlayer, useDebounce
-├── pages/           # HomePage
-├── services/        # synkApi, downloadService, normalizer
-├── stores/          # Zustand stores (search, player, download)
-├── types/           # Interfaces TypeScript
-└── utils/           # Funciones helper
+musicya-app/
+├── backend/                  # API Python/FastAPI
+│   ├── main.py               # App entry point + CORS
+│   ├── Dockerfile            # Python 3.12-slim + yt-dlp + ffmpeg
+│   ├── requirements.txt
+│   ├── routes/
+│   │   ├── search.py         # GET /api/search (proxy iTunes)
+│   │   └── download.py       # POST /api/download (yt-dlp + FFmpeg + tags)
+│   ├── services/
+│   │   ├── downloader.py     # yt-dlp subprocess + FFmpeg transcode
+│   │   └── metadata.py       # mutagen ID3 tags (incluye APIC cover)
+│   └── models/
+│       └── schemas.py        # Pydantic request/response models
+├── src/                      # Frontend React
+│   ├── components/
+│   │   ├── search/           # Input, resultados, tarjetas
+│   │   ├── player/           # Reproductor, controles
+│   │   └── download/         # Selector calidad, botón descarga
+│   ├── hooks/                # useAudioPlayer, useDebounce
+│   ├── pages/                # HomePage
+│   ├── services/             # synkApi, downloadService, normalizer
+│   ├── stores/               # Zustand stores (search, player, download)
+│   ├── types/                # Interfaces TypeScript
+│   └── test/                 # Setup de tests
+├── nginx/
+│   └── default.conf          # Nginx: proxy API + SPA fallback + caché
+├── Dockerfile                # Multi-stage: build Vite + servir con Nginx
+├── docker-compose.yml        # Backend + Frontend
+└── .dockerignore
+```
+
+## 🔄 Pipeline de descarga
+
+```
+Frontend busca → Backend proxy iTunes API → resultados
+Click "Descargar" → Backend recibe artista + título + calidad
+  → yt-dlp busca en YouTube → descarga mejor audio
+  → FFmpeg transcodifica a MP3 (128/320 kbps)
+  → mutagen escribe metadatos ID3 (título, artista, álbum, año, género, carátula)
+  → StreamingResponse del MP3 al frontend
+Frontend → trigger download del archivo
 ```
 
 ## 🧪 Tests
@@ -92,7 +182,7 @@ src/
 npm test
 ```
 
-Cobertura actual: **19 tests** (API, stores de búsqueda y reproductor).
+Cobertura actual: **19 tests** (API, stores de búsqueda, stores de reproductor).
 
 ## 🔮 Roadmap
 
@@ -100,11 +190,13 @@ Cobertura actual: **19 tests** (API, stores de búsqueda y reproductor).
 - [x] Preview de audio (30s)
 - [x] Descarga con calidad seleccionable
 - [x] Metadatos ID3 + carátula embebida
-- [x] Tests unitarios
+- [x] Backend Python/FastAPI con yt-dlp
+- [x] Canciones completas (no solo previews)
+- [x] Deploy Docker Compose + Dokploy
 - [ ] Modo offline / Service Worker
 - [ ] Historial de descargas persistente
 - [ ] Playlists y descarga por lote
 
 ## 📄 Licencia
 
-MIT © 2026 — [Tu Nombre]
+MIT © 2026
