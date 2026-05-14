@@ -27,10 +27,19 @@ export async function downloadTrack(
   // 2. Descargar cover (opcional)
   let coverBlob: Blob | null = null
   if (track.coverUrl) {
+    console.log('[download] coverUrl:', track.coverUrl)
     try {
-      const coverResp = await fetch(track.coverUrl)
-      if (coverResp.ok) coverBlob = await coverResp.blob()
-    } catch { /* opcional */ }
+      const coverResp = await fetch(track.coverUrl, { mode: 'cors' })
+      console.log('[download] cover response:', coverResp.status, coverResp.statusText)
+      if (coverResp.ok) {
+        coverBlob = await coverResp.blob()
+        console.log('[download] cover blob:', coverBlob.type, `${(coverBlob.size / 1024).toFixed(1)}KB`)
+      }
+    } catch (err) {
+      console.warn('[download] cover fetch failed:', err)
+    }
+  } else {
+    console.warn('[download] no coverUrl for track:', track.id, track.title)
   }
   onProgress?.(40)
 

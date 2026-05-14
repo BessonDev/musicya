@@ -33,6 +33,8 @@ function createApicFrame(coverBlob: Blob): Promise<ArrayBuffer> {
     const mimeType = coverBlob.type || 'image/jpeg'
     const imgData = new Uint8Array(await coverBlob.arrayBuffer())
 
+    // En ID3v2.3 usar ISO-8859-1 ($00) para máxima compatibilidad
+    const encoding = 0x00
     const mimeBytes = new TextEncoder().encode(mimeType + '\0')
     const descBytes = new TextEncoder().encode('\0')
 
@@ -48,13 +50,13 @@ function createApicFrame(coverBlob: Blob): Promise<ArrayBuffer> {
     view.setUint16(8, 0, false)
 
     let offset = 10
-    view.setUint8(offset, 0x03)
+    view.setUint8(offset, encoding)
     offset++
 
     new Uint8Array(buffer, offset).set(mimeBytes)
     offset += mimeBytes.byteLength
 
-    view.setUint8(offset, 0x03)
+    view.setUint8(offset, 0x03) // picture type: front cover
     offset++
 
     new Uint8Array(buffer, offset).set(descBytes)
@@ -96,9 +98,12 @@ export async function writeId3Tags(
     try {
       const apic = await createApicFrame(coverBlob)
       frames.push(apic)
-    } catch {
-      // Cover art es opcional
+      console.log('[id3] APIC frame added:', (apic.byteLength / 1024).toFixed(1), 'KB')
+    } catch (err) {
+      console.warn('[id3] APIC frame failed:', err)
     }
+  } else {
+    console.warn('[id3] no coverBlob, skipping APIC')
   }
 
   const framesBuffer = combineBuffers(frames)
