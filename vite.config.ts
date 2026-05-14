@@ -18,6 +18,9 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    exclude: ['lamejs'],
+  },
   test: {
     globals: true,
     environment: 'jsdom',

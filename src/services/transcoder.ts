@@ -1,13 +1,25 @@
 /**
  * Decodifica audio AAC/MP4 a PCM usando Web Audio API,
  * luego codifica a MP3 usando lamejs
+ *
+ * lamejs se carga desde public/lame.all.js como script (no como módulo ES)
+ * para evitar problemas de CJS → ESM con Vite (MPEGMode no definido).
+ * Se mantiene lazy-load: solo se carga al descargar.
  */
 
 let lamejsModule: any = null
 
-async function getLamejs() {
+async function getLamejs(): Promise<any> {
   if (!lamejsModule) {
-    lamejsModule = await import('lamejs')
+    await new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = '/lame.all.js'
+      script.async = true
+      script.onload = () => resolve()
+      script.onerror = () => reject(new Error('Error al cargar lamejs'))
+      document.head.appendChild(script)
+    })
+    lamejsModule = (window as any).lamejs
   }
   return lamejsModule
 }
