@@ -11,15 +11,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/proxy/itunes': {
-        target: 'https://itunes.apple.com',
+      '/api': {
+        target: 'http://localhost:8000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/proxy\/itunes/, ''),
       },
     },
-  },
-  optimizeDeps: {
-    exclude: ['lamejs'],
   },
   test: {
     globals: true,

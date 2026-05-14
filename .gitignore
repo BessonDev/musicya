@@ -28,3 +28,17 @@ npm-debug.log*
 
 # Testing
 coverage/
+
+# Python backend
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+*.egg
+.Python
+env/
+venv/
+.venv/
+backend/temp/
+/tmp/musicya/
