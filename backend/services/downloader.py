@@ -71,7 +71,7 @@ async def cobalt_download(video_url: str, temp_dir: str) -> str:
     """
     output_path = os.path.join(temp_dir, "output.mp3")
 
-async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient() as client:
         # Step 1: Request the download from cobalt
         resp = await client.post(
             COBALT_API,
