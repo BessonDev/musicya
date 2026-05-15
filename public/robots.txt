@@ -1,14 +1,4 @@
-# Allow Facebook scraper fully (OG tags)
-User-agent: facebookexternalhit
-Allow: /
-
-# Allow Twitter scraper fully (card tags)
-User-agent: Twitterbot
-Allow: /
-
-# General rules
 User-agent: *
 Allow: /
-Disallow: /api/
 
 Sitemap: https://musicya.app/sitemap.xml
