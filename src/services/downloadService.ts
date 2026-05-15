@@ -20,6 +20,7 @@ export async function downloadTrack(
       year: track.year,
       genre: track.genre,
       coverUrl: track.coverUrl,
+      previewUrl: track.previewUrl,
     }),
   })
 

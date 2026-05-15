@@ -117,16 +117,20 @@ async def cobalt_download(video_url: str, temp_dir: str) -> str:
     return output_path
 
 
-async def download_audio(artist: str, title: str) -> tuple[str, str]:
+async def download_audio(artist: str, title: str, video_url: str | None = None) -> tuple[str, str]:
     """
     Search YouTube and download audio via cobalt.tools.
+    If video_url is provided, skip search and use it directly.
     Returns (temp_dir_path, mp3_file_path).
     Caller MUST clean up temp_dir.
     """
     temp_dir = tempfile.mkdtemp(prefix="musicya_")
 
     try:
-        video_url = await search_youtube_video(artist, title)
+        # Use provided URL or search for one
+        if not video_url:
+            video_url = await search_youtube_video(artist, title)
+        
         mp3_path = await cobalt_download(video_url, temp_dir)
         return temp_dir, mp3_path
 

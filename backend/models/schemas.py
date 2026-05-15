@@ -10,6 +10,7 @@ class DownloadRequest(BaseModel):
     year: Optional[int] = None
     genre: Optional[str] = None
     coverUrl: Optional[str] = None
+    previewUrl: Optional[str] = None  # YouTube URL from iTunes search
 
 
 class TrackResponse(BaseModel):

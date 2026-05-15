@@ -54,7 +54,8 @@ async def download(req: DownloadRequest):
     temp_dir = None
     try:
         # 1. Search YouTube + download MP3 via cobalt.tools
-        temp_dir, mp3_path = await download_audio(req.artist, req.title)
+        # Use previewUrl from iTunes if available, otherwise search
+        temp_dir, mp3_path = await download_audio(req.artist, req.title, req.previewUrl)
 
         # 2. Write ID3 tags
         write_id3_tags(
