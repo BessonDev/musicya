@@ -70,6 +70,38 @@ async def search_youtube_video(artist: str, title: str) -> str:
         return f"https://www.youtube.com/watch?v={video_id}"
 
 
+async def ytdlp_download(video_url: str, temp_dir: str) -> str:
+    """
+    Download audio from YouTube URL using yt-dlp directly.
+    Since we're using the API for search, the URL is known-good.
+    """
+    output_template = os.path.join(temp_dir, "%(title)s.%(ext)s")
+    
+    # Download best audio and convert to mp3
+    await run_cmd([
+        "yt-dlp",
+        "-f", "bestaudio",
+        "--extract-audio",
+        "--audio-format", "mp3",
+        "--audio-quality", "0",  # best quality
+        "-o", output_template,
+        "--no-playlist",
+        "--", video_url,
+    ], timeout=DOWNLOAD_TIMEOUT)
+    
+    # Find the downloaded file
+    mp3_file = None
+    for f in os.listdir(temp_dir):
+        if f.endswith('.mp3'):
+            mp3_file = os.path.join(temp_dir, f)
+            break
+    
+    if not mp3_file:
+        raise DownloadError("No se encontró el archivo MP3 descargado")
+    
+    return mp3_file
+
+
 async def cobalt_download(video_url: str, temp_dir: str) -> str:
     """
     Download audio from a YouTube URL via cobalt.tools API.
@@ -148,7 +180,7 @@ async def download_audio(artist: str, title: str, video_url: str | None = None) 
         elif "youtube.com" not in video_url.lower() and "youtu.be" not in video_url.lower():
             video_url = await search_youtube_video(artist, title)
         
-        mp3_path = await cobalt_download(video_url, temp_dir)
+        mp3_path = await ytdlp_download(video_url, temp_dir)
         return temp_dir, mp3_path
 
     except Exception:
