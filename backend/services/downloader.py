@@ -80,38 +80,59 @@ async def cobalt_download(video_url: str, temp_dir: str) -> str:
     async with httpx.AsyncClient() as client:
         # Step 1: Request the download from cobalt
         resp = await client.post(
-            COBALT_API,
-            data=json.dumps({
+            "https://api.cobalt.tools/api/json",
+            json={
                 "url": video_url,
-                "isAudioOnly": True,
-            }),
-            headers={
-                "Content-Type": "application/json",
             },
             timeout=30,
         )
+        
+        if resp.status_code == 400:
+            # Try alternative endpoint
+            resp = await client.post(
+                "https://api.cobalt.tools/",
+                json={
+                    "url": video_url,
+                    "downloadType": "audio",
+                    "audioFormat": "mp3",
+                },
+                timeout=30,
+            )
+        
         resp.raise_for_status()
         data = resp.json()
 
-        if data.get("status") != "redirect":
+        # Handle different response formats
+        if data.get("status") == "redirect":
+            download_url = data.get("url")
+        elif data.get("status") == "success":
+            # Sometimes it returns the file directly
+            download_url = data.get("url") or data.get("file")
+        else:
             raise DownloadError(
-                f"Error del servicio de descarga: {data.get('text', 'error desconocido')}"
+                f"Error del servicio de descarga: {data}"
             )
 
-        download_url = data.get("url")
         if not download_url:
             raise DownloadError("No se pudo obtener el enlace de descarga")
 
         # Step 2: Download the actual file
-        file_resp = await client.get(
-            download_url,
-            timeout=180,
-            follow_redirects=True,
-        )
-        file_resp.raise_for_status()
-
-        with open(output_path, "wb") as f:
-            f.write(file_resp.content)
+        if download_url.startswith("http"):
+            file_resp = await client.get(
+                download_url,
+                timeout=180,
+                follow_redirects=True,
+            )
+            file_resp.raise_for_status()
+            
+            with open(output_path, "wb") as f:
+                f.write(file_resp.content)
+        else:
+            # It's base64 encoded
+            import base64
+            audio_data = base64.b64decode(download_url)
+            with open(output_path, "wb") as f:
+                f.write(audio_data)
 
     if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
         raise DownloadError("La descarga no generó ningún archivo")
