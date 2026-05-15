@@ -9,7 +9,6 @@ export function DownloadProgress() {
   }
 
   const { track, progress, status } = currentDownload
-  const isDownloading = status === 'downloading'
   const isCompleted = status === 'completed'
   const isError = status === 'error' || status === 'cancelled'
 
