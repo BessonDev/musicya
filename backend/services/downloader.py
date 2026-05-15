@@ -199,6 +199,7 @@ async def ytdlp_download(video_url: str, temp_dir: str, use_cookies: bool = Fals
         "-o", output_template,
         "--no-playlist",
         "--js-runtimes", "node",
+        "--remote-components", "ejs:github",
     ]
     
     if use_cookies:
