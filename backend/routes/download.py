@@ -2,7 +2,7 @@ import os
 import shutil
 import asyncio
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response
 
 from models.schemas import DownloadRequest, ErrorResponse
 from services.downloader import download_audio, DownloadError
@@ -68,21 +68,16 @@ async def download(req: DownloadRequest):
             cover_url=req.coverUrl,
         )
 
-        # 3. Read file and return as streaming response
-        file_size = os.path.getsize(mp3_path)
+        # 3. Read file into memory, clean up, then return
         filename = f"{_sanitize(req.artist)} - {_sanitize(req.title)}.mp3"
+        with open(mp3_path, "rb") as f:
+            data = f.read()
 
-        async def file_stream():
-            with open(mp3_path, "rb") as f:
-                while chunk := f.read(64 * 1024):
-                    yield chunk
-
-        return StreamingResponse(
-            file_stream(),
+        return Response(
+            content=data,
             media_type="audio/mpeg",
             headers={
                 "Content-Disposition": f'attachment; filename="{filename}"',
-                "Content-Length": str(file_size),
             },
         )
 
