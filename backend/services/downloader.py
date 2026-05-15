@@ -6,7 +6,7 @@ import shutil
 import httpx
 
 DOWNLOAD_TIMEOUT = 120  # seconds
-COBALT_API = "https://co.wukko.me/"
+COBALT_API = "https://api.cobalt.tools/api/json"
 
 
 class DownloadError(Exception):
