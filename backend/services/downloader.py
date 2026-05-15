@@ -9,6 +9,7 @@ import httpx
 logger = logging.getLogger("musicya.downloader")
 
 DOWNLOAD_TIMEOUT = 120
+DOWNLOAD_SEMAPHORE = asyncio.Semaphore(2)  # max 2 downloads simultáneos
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "")
 COOKIES_PATH = os.getenv("COOKIES_FILE", "/app/cookies.txt")
 COOKIES_B64 = os.getenv("COOKIES_B64", "")
@@ -111,16 +112,25 @@ async def download_audio(artist: str, title: str, video_url: str | None = None) 
         if not (video_url and ("youtube.com" in video_url.lower() or "youtu.be" in video_url.lower())):
             video_url = await search_youtube_video(artist, title)
 
-        cookies_file = _ensure_cookies_file()
-        if cookies_file:
-            try:
-                mp3_path = await ytdlp_download(video_url, temp_dir, use_cookies=True)
-                return temp_dir, mp3_path
-            except Exception as e:
-                logger.warning("yt-dlp con cookies falló: %s", e)
+        # Esperar turno para descargar (máx 2 simultáneas)
+        try:
+            await asyncio.wait_for(DOWNLOAD_SEMAPHORE.acquire(), timeout=60)
+        except asyncio.TimeoutError:
+            raise DownloadError("Demasiadas descargas en cola. Intentá de nuevo en un minuto.")
 
-        mp3_path = await ytdlp_download(video_url, temp_dir, use_cookies=False)
-        return temp_dir, mp3_path
+        try:
+            cookies_file = _ensure_cookies_file()
+            if cookies_file:
+                try:
+                    mp3_path = await ytdlp_download(video_url, temp_dir, use_cookies=True)
+                    return temp_dir, mp3_path
+                except Exception as e:
+                    logger.warning("yt-dlp con cookies falló: %s", e)
+
+            mp3_path = await ytdlp_download(video_url, temp_dir, use_cookies=False)
+            return temp_dir, mp3_path
+        finally:
+            DOWNLOAD_SEMAPHORE.release()
     except Exception:
         shutil.rmtree(temp_dir, ignore_errors=True)
         raise
