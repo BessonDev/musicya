@@ -78,61 +78,51 @@ async def cobalt_download(video_url: str, temp_dir: str) -> str:
     output_path = os.path.join(temp_dir, "output.mp3")
 
     async with httpx.AsyncClient() as client:
-        # Step 1: Request the download from cobalt
-        resp = await client.post(
+        # Try multiple cobalt endpoints
+        endpoints = [
             "https://api.cobalt.tools/api/json",
-            json={
-                "url": video_url,
-            },
-            timeout=30,
-        )
+            "https://api.cobalt.tools/api/v10/json",
+            "https://co.wukko.me/",
+        ]
         
-        if resp.status_code == 400:
-            # Try alternative endpoint
-            resp = await client.post(
-                "https://api.cobalt.tools/",
-                json={
-                    "url": video_url,
-                    "downloadType": "audio",
-                    "audioFormat": "mp3",
-                },
-                timeout=30,
-            )
+        download_url = None
         
-        resp.raise_for_status()
-        data = resp.json()
-
-        # Handle different response formats
-        if data.get("status") == "redirect":
-            download_url = data.get("url")
-        elif data.get("status") == "success":
-            # Sometimes it returns the file directly
-            download_url = data.get("url") or data.get("file")
-        else:
-            raise DownloadError(
-                f"Error del servicio de descarga: {data}"
-            )
-
+        for endpoint in endpoints:
+            try:
+                resp = await client.post(
+                    endpoint,
+                    json={
+                        "url": video_url,
+                        "v": "v10",
+                    },
+                    timeout=30,
+                )
+                
+                if resp.status_code == 200:
+                    data = resp.json()
+                    
+                    if data.get("status") == "redirect":
+                        download_url = data.get("url")
+                        break
+                    elif data.get("status") == "success":
+                        download_url = data.get("url")
+                        break
+            except Exception:
+                continue
+        
         if not download_url:
-            raise DownloadError("No se pudo obtener el enlace de descarga")
+            raise DownloadError("No se pudo obtener el enlace de descarga desde ningún endpoint de cobalt")
 
         # Step 2: Download the actual file
-        if download_url.startswith("http"):
-            file_resp = await client.get(
-                download_url,
-                timeout=180,
-                follow_redirects=True,
-            )
-            file_resp.raise_for_status()
-            
-            with open(output_path, "wb") as f:
-                f.write(file_resp.content)
-        else:
-            # It's base64 encoded
-            import base64
-            audio_data = base64.b64decode(download_url)
-            with open(output_path, "wb") as f:
-                f.write(audio_data)
+        file_resp = await client.get(
+            download_url,
+            timeout=180,
+            follow_redirects=True,
+        )
+        file_resp.raise_for_status()
+
+        with open(output_path, "wb") as f:
+            f.write(file_resp.content)
 
     if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
         raise DownloadError("La descarga no generó ningún archivo")
