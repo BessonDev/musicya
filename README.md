@@ -107,6 +107,36 @@ Esto construye:
 
 La app queda accesible en el puerto `80`.
 
+### Cookies de YouTube (necesarias)
+
+YouTube bloquea yt-dlp automáticamente. Para descargar, el backend necesita cookies de una sesión logueada en YouTube.
+
+**1. Exportar cookies desde el navegador**
+
+Instalá una extensión como [cookies.txt](https://chrome.google.com/webstore/detail/cookies-txt/njabckikapfpffapmjgojcnbfjonfjfg) (Chrome) o [cookies.txt](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/) (Firefox), andá a `youtube.com` logueado, y exportá las cookies. Guardalas como `cookies.txt` en la raíz del proyecto.
+
+**2. Generar el base64**
+
+```bash
+# PowerShell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("cookies.txt"))
+
+# Linux/macOS
+base64 -w0 cookies.txt
+```
+
+**3. Setear en Dokploy**
+
+Agregá la variable de entorno en tu servicio backend:
+
+```
+COOKIES_B64 = <el string base64>
+```
+
+**4. Actualizar cuando expiren**
+
+Las cookies de sesión expiran. Cuando deje de funcionar, repetí los pasos 1-3 y reiniciá el stack en Dokploy.
+
 ### Alternativa: deploy manual con Docker Compose
 
 ```bash
