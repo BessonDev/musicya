@@ -15,17 +15,24 @@ YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "")
 COOKIES_PATH = os.getenv("COOKIES_FILE", "/app/cookies.txt")
 COOKIES_B64 = os.getenv("COOKIES_B64", "")
 
+logger.info("COOKIES_B64 set: %s", "yes" if COOKIES_B64 else "no")
+logger.info("COOKIES_PATH exists: %s", os.path.exists(COOKIES_PATH))
+
 
 def _ensure_cookies_file() -> str:
     """Return path to cookies file, creating it from COOKIES_B64 if needed."""
     if os.path.exists(COOKIES_PATH):
+        logger.info("Usando cookies desde archivo: %s", COOKIES_PATH)
         return COOKIES_PATH
     if COOKIES_B64:
         path = os.path.join(tempfile.gettempdir(), "musicya_cookies.txt")
         import base64
+        decoded = base64.b64decode(COOKIES_B64)
+        logger.info("Decodificando COOKIES_B64 (%d bytes)", len(decoded))
         with open(path, "wb") as f:
-            f.write(base64.b64decode(COOKIES_B64))
+            f.write(decoded)
         return path
+    logger.warning("No hay cookies disponibles")
     return ""
 
 
@@ -314,10 +321,12 @@ async def download_audio(artist: str, title: str, video_url: str | None = None) 
         except Exception as e:
             logger.warning("Invidious falló: %s", e)
         
-        # Priority 3: yt-dlp sin cookies (último intento)
-        if not cookies_file:
+        # Priority 3: yt-dlp sin cookies (último intento, aunque cookies hayan fallado)
+        try:
             mp3_path = await ytdlp_download(video_url, temp_dir, use_cookies=False)
             return temp_dir, mp3_path
+        except Exception as e:
+            logger.warning("yt-dlp sin cookies también falló: %s", e)
         
         raise DownloadError("Todos los métodos de descarga fallaron")
 
