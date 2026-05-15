@@ -1,5 +1,6 @@
 import { SearchInput, SearchResults } from '@/components/search'
 import { AudioPlayer } from '@/components/player'
+import { DownloadProgress } from '@/components/download'
 
 /**
  * Página principal con búsqueda y resultados
@@ -34,6 +35,7 @@ export function HomePage() {
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
         <SearchResults />
+        <DownloadProgress />
       </main>
 
       {/* Audio Player Footer */}

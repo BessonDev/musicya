@@ -3,7 +3,7 @@ services:
     build:
       context: ./backend
       args:
-        CACHEBUST: "20260514-v11"
+        CACHEBUST: "20260514-v12"
     env_file:
       - .env
     environment:

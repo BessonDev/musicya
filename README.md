@@ -45,7 +45,7 @@
 | UI | Tailwind CSS 3 |
 | Audio | Howler.js |
 | Backend | Python 3.12, FastAPI |
-| Descargas | yt-dlp + FFmpeg |
+| Descargas | yt-dlp + FFmpeg + JS challenge solver |
 | Metadatos | mutagen (ID3v2.3) |
 | Proxy API | httpx (async iTunes client) |
 | Deploy | Docker Compose + Nginx |
@@ -172,7 +172,7 @@ musicya-app/
 │   │   ├── search.py         # GET /api/search (proxy iTunes)
 │   │   └── download.py       # POST /api/download (yt-dlp + FFmpeg + tags)
 │   ├── services/
-│   │   ├── downloader.py     # yt-dlp subprocess + FFmpeg transcode
+│   │   ├── downloader.py     # yt-dlp + YouTube API + cookies + FFmpeg
 │   │   └── metadata.py       # mutagen ID3 tags (incluye APIC cover)
 │   └── models/
 │       └── schemas.py        # Pydantic request/response models
@@ -187,6 +187,10 @@ musicya-app/
 │   ├── stores/               # Zustand stores (search, player, download)
 │   ├── types/                # Interfaces TypeScript
 │   └── test/                 # Setup de tests
+├── public/
+│   ├── favicon.svg           # Icono de la app
+│   ├── robots.txt            # Configuración de crawlers
+│   └── sitemap.xml           # Mapa del sitio
 ├── nginx/
 │   └── default.conf          # Nginx: proxy API + SPA fallback + caché
 ├── Dockerfile                # Multi-stage: build Vite + servir con Nginx
@@ -199,10 +203,11 @@ musicya-app/
 ```
 Frontend busca → Backend proxy iTunes API → resultados
 Click "Descargar" → Backend recibe artista + título + calidad
-  → yt-dlp busca en YouTube → descarga mejor audio
+  → YouTube Data API v3 search
+  → yt-dlp con cookies + JS challenge solver (ejs:github)
   → FFmpeg transcodifica a MP3 (128/320 kbps)
   → mutagen escribe metadatos ID3 (título, artista, álbum, año, género, carátula)
-  → StreamingResponse del MP3 al frontend
+  → Response del MP3 completo al frontend
 Frontend → trigger download del archivo
 ```
 
