@@ -22,6 +22,9 @@
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License" />
 </p>
 
+<img width="1897" height="1077" alt="music-ya1" src="https://github.com/user-attachments/assets/4dbf0f08-f298-4a47-a715-27cb94fedae7" />
+
+
 ---
 
 ## ✨ Características
