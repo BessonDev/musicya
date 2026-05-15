@@ -86,6 +86,7 @@ async def ytdlp_download(video_url: str, temp_dir: str) -> str:
         "--audio-quality", "0",  # best quality
         "-o", output_template,
         "--no-playlist",
+        "--js-runtimes", "node",
         "--", video_url,
     ], timeout=DOWNLOAD_TIMEOUT)
     
