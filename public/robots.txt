@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://musicya.app/sitemap.xml
+Sitemap: https://musicya.bessondevproject.com/sitemap.xml

@@ -2,10 +2,10 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
-    <loc>https://musicya.app/</loc>
+    <loc>https://musicya.bessondevproject.com/</loc>
     <lastmod>2026-05-15</lastmod>
     <image:image>
-      <image:loc>https://musicya.app/og-image.png</image:loc>
+      <image:loc>https://musicya.bessondevproject.com/og-image.png</image:loc>
     </image:image>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
