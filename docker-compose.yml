@@ -3,7 +3,7 @@ services:
     build:
       context: ./backend
       args:
-        CACHEBUST: "20260514-v2"
+        CACHEBUST: "20260514-v3"
     environment:
       - PORT=8000
     volumes:
