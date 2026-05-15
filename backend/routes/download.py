@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
 from models.schemas import DownloadRequest, ErrorResponse
-from services.downloader import download_audio, transcode_to_mp3, DownloadError, find_audio_file
+from services.downloader import download_audio, DownloadError
 from services.metadata import write_id3_tags
 
 router = APIRouter()
@@ -53,14 +53,10 @@ async def download(req: DownloadRequest):
 
     temp_dir = None
     try:
-        # 1. Download audio from YouTube via yt-dlp
-        temp_dir, audio_file = await download_audio(req.artist, req.title)
+        # 1. Search YouTube + download MP3 via cobalt.tools
+        temp_dir, mp3_path = await download_audio(req.artist, req.title)
 
-        # 2. Transcode to MP3
-        mp3_path = os.path.join(temp_dir, "output.mp3")
-        await transcode_to_mp3(audio_file, mp3_path, req.quality)
-
-        # 3. Write ID3 tags
+        # 2. Write ID3 tags
         write_id3_tags(
             mp3_path=mp3_path,
             title=req.title,
@@ -71,7 +67,7 @@ async def download(req: DownloadRequest):
             cover_url=req.coverUrl,
         )
 
-        # 4. Read file and return as streaming response
+        # 3. Read file and return as streaming response
         file_size = os.path.getsize(mp3_path)
         filename = f"{_sanitize(req.artist)} - {_sanitize(req.title)}.mp3"
 

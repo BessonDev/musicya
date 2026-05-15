@@ -2,9 +2,11 @@ import asyncio
 import os
 import tempfile
 import shutil
-from pathlib import Path
+
+import httpx
 
 DOWNLOAD_TIMEOUT = 120  # seconds
+COBALT_API = "https://co.wukko.me/"
 
 
 class DownloadError(Exception):
@@ -33,73 +35,101 @@ async def run_cmd(cmd: list[str], timeout: int = DOWNLOAD_TIMEOUT) -> str:
     return stdout.decode(errors="replace")
 
 
-def find_audio_file(temp_dir: str) -> str | None:
-    """Find the downloaded audio file in temp_dir (first non-empty audio file)."""
-    for f in os.listdir(temp_dir):
-        path = os.path.join(temp_dir, f)
-        if os.path.isfile(path) and os.path.getsize(path) > 0:
-            ext = Path(f).suffix.lower()
-            if ext in (".m4a", ".webm", ".opus", ".mp3", ".ogg", ".wav"):
-                return path
-    return None
+async def search_youtube_video(artist: str, title: str) -> str:
+    """
+    Search YouTube for a song and return the first video URL.
+    Uses yt-dlp with --skip-download (only searches, doesn't download).
+    """
+    query = f"ytsearch:{artist} - {title}"
+    result = await run_cmd([
+        "yt-dlp",
+        "--skip-download",
+        "--print", "url",
+        "--default-search", "ytsearch",
+        "--extractor-args", "youtube:player_client=web",
+        "--user-agent",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        "--geo-bypass",
+        "--extractor-retries", "3",
+        "--ignore-errors",
+        "--", query,
+    ], timeout=30)
+
+    lines = result.strip().split("\n")
+    for line in lines:
+        line = line.strip()
+        if line.startswith("http"):
+            return line
+
+    raise DownloadError("No se encontró ningún video en YouTube para esa canción")
+
+
+async def cobalt_download(video_url: str, temp_dir: str) -> str:
+    """
+    Download audio from a YouTube URL via cobalt.tools API.
+    Returns path to the downloaded MP3 file.
+    """
+    output_path = os.path.join(temp_dir, "output.mp3")
+
+    async with httpx.AsyncClient() as client:
+        # Step 1: Request download link from cobalt
+        resp = await client.post(
+            COBALT_API,
+            json={
+                "url": video_url,
+                "videoQuality": "audio_only",
+                "audioFormat": "mp3",
+                "filenameStyle": "classic",
+                "isAudioOnly": True,
+            },
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        if data.get("status") != "redirect":
+            raise DownloadError(
+                f"Error del servicio de descarga: {data.get('text', 'error desconocido')}"
+            )
+
+        download_url = data.get("url")
+        if not download_url:
+            raise DownloadError("No se pudo obtener el enlace de descarga")
+
+        # Step 2: Download the actual audio file
+        file_resp = await client.get(
+            download_url,
+            timeout=180,
+            follow_redirects=True,
+        )
+        file_resp.raise_for_status()
+
+        with open(output_path, "wb") as f:
+            f.write(file_resp.content)
+
+    if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+        raise DownloadError("La descarga no generó ningún archivo")
+
+    return output_path
 
 
 async def download_audio(artist: str, title: str) -> tuple[str, str]:
     """
-    Search YouTube with yt-dlp and download the best audio.
-    Returns (temp_dir_path, audio_file_path).
+    Search YouTube and download audio via cobalt.tools.
+    Returns (temp_dir_path, mp3_file_path).
     Caller MUST clean up temp_dir.
     """
     temp_dir = tempfile.mkdtemp(prefix="musicya_")
-    query = f"ytsearch:{artist} - {title} audio"
 
     try:
-        # Step 1: Download best audio
-        output_template = os.path.join(temp_dir, "%(id)s.%(ext)s")
-        await run_cmd([
-            "yt-dlp",
-            "-f", "bestaudio[ext=m4a]/bestaudio",
-            "-o", output_template,
-            "--no-playlist",
-            "--print", "filename",
-            "--extractor-args", "youtube:player_client=web",
-            "--user-agent",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-            "--geo-bypass",
-            "--extractor-retries", "3",
-            "--ignore-errors",
-            "--", query,
-        ], timeout=DOWNLOAD_TIMEOUT)
-
-        # Step 2: Find the downloaded file
-        audio_file = find_audio_file(temp_dir)
-        if not audio_file:
-            raise DownloadError("No se encontró archivo de audio descargado")
-
-        return temp_dir, audio_file
+        video_url = await search_youtube_video(artist, title)
+        mp3_path = await cobalt_download(video_url, temp_dir)
+        return temp_dir, mp3_path
 
     except Exception:
-        # Clean up on error — caller also cleans, but be defensive
         shutil.rmtree(temp_dir, ignore_errors=True)
         raise
-
-
-async def transcode_to_mp3(input_path: str, output_path: str, bitrate: int) -> str:
-    """
-    Transcode audio file to MP3 using FFmpeg.
-    Returns the path to the transcoded MP3.
-    """
-    await run_cmd([
-        "ffmpeg",
-        "-i", input_path,
-        "-codec:a", "libmp3lame",
-        "-b:a", f"{bitrate}k",
-        "-id3v2_version", "3",
-        "-y",
-        output_path,
-    ], timeout=DOWNLOAD_TIMEOUT)
-
-    if not os.path.exists(output_path):
-        raise DownloadError("FFmpeg transcoding failed: no output file")
-
-    return output_path
