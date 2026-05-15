@@ -23,7 +23,17 @@ export function HomePage() {
             </h1>
             <p className="text-zinc-500 text-sm mt-1">
               Descarga música gratis en alta calidad.
-              by <a href="https://bessondev.com">bessondev</a>
+            </p>
+            <p className="text-xs text-zinc-600 mt-2 tracking-wide">
+              Desarrollado por{' '}
+              <a
+                href="https://bessondev.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary/70 hover:text-primary transition-colors font-medium"
+              >
+                bessondev
+              </a>
             </p>
           </div>
 
