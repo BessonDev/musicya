@@ -70,6 +70,117 @@ async def search_youtube_video(artist: str, title: str) -> str:
         return f"https://www.youtube.com/watch?v={video_id}"
 
 
+# Invidious instances - se prueban en orden hasta que una funcione
+INVIDIOUS_INSTANCES = [
+    "https://yewtu.be",
+    "https://invidious.snopyta.org",
+    "https://invidious.kavin.rocks",
+    "https://iv.datura.app",
+]
+
+
+async def invidious_download(video_url: str, temp_dir: str) -> str:
+    """
+    Download audio from YouTube via Invidious (no blocks, no auth needed).
+    """
+    # Extract video ID from URL
+    import re
+    match = re.search(r'(?:v=|youtu\.be/)([a-zA-Z0-9_-]{11})', video_url)
+    if not match:
+        raise DownloadError("No se pudo extraer el ID del video de YouTube")
+    
+    video_id = match.group(1)
+    output_path = os.path.join(temp_dir, "output.mp3")
+    
+    # Try each Invidious instance
+    for instance in INVIDIOUS_INSTANCES:
+        try:
+            async with httpx.AsyncClient() as client:
+                # Get video info with streams
+                resp = await client.get(
+                    f"{instance}/api/v1/videos/{video_id}",
+                    params={"fields": "adaptiveFormats"},
+                    timeout=30,
+                )
+                
+                if resp.status_code != 200:
+                    continue
+                
+                data = resp.json()
+                formats = data.get("adaptiveFormats", [])
+                
+                # Find audio-only format (usually has mimeType audio/mp4 or audio/webm)
+                audio_url = None
+                for fmt in formats:
+                    mime_type = fmt.get("mimeType", "")
+                    if "audio" in mime_type.lower():
+                        audio_url = fmt.get("url")
+                        if audio_url:
+                            break
+                
+                if not audio_url:
+                    continue
+                
+                # Download the audio
+                audio_resp = await client.get(audio_url, timeout=180)
+                audio_resp.raise_for_status()
+                
+                # Save temporarily and convert to MP3
+                temp_audio = os.path.join(temp_dir, "audiofile")
+                with open(temp_audio, "wb") as f:
+                    f.write(audio_resp.content)
+                
+                # Convert to MP3
+                await run_cmd([
+                    "ffmpeg",
+                    "-i", temp_audio,
+                    "-codec:a", "libmp3lame",
+                    "-b:a", "320k",
+                    "-y",
+                    output_path,
+                ], timeout=DOWNLOAD_TIMEOUT)
+                
+                if os.path.exists(output_path):
+                    return output_path
+                    
+        except Exception:
+            continue
+    
+    raise DownloadError("No se pudo descargar desde ninguna instancia de Invidious")
+
+
+async def download_itunes_preview(preview_url: str, temp_dir: str) -> str:
+    """
+    Download the iTunes preview URL directly and transcode to MP3.
+    The preview URL comes from iTunes search results.
+    """
+    output_path = os.path.join(temp_dir, "preview.m4a")
+    mp3_path = os.path.join(temp_dir, "output.mp3")
+    
+    # Download the preview file
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(preview_url, timeout=60)
+        resp.raise_for_status()
+        
+        with open(output_path, "wb") as f:
+            f.write(resp.content)
+    
+    # Convert to MP3 with FFmpeg
+    await run_cmd([
+        "ffmpeg",
+        "-i", output_path,
+        "-codec:a", "libmp3lame",
+        "-b:a", "320k",
+        "-y",
+        mp3_path,
+    ], timeout=DOWNLOAD_TIMEOUT)
+    
+    if not os.path.exists(mp3_path):
+        raise DownloadError("La conversión a MP3 falló")
+    
+    return mp3_path
+
+
 async def ytdlp_download(video_url: str, temp_dir: str) -> str:
     """
     Download audio from YouTube URL using yt-dlp directly.
@@ -165,23 +276,25 @@ async def cobalt_download(video_url: str, temp_dir: str) -> str:
 
 async def download_audio(artist: str, title: str, video_url: str | None = None) -> tuple[str, str]:
     """
-    Search YouTube and download audio via cobalt.tools.
-    If video_url is provided and is a YouTube URL, use it directly.
-    Otherwise search on YouTube.
+    Download audio. Priority:
+    1. If previewUrl is provided and NOT from YouTube -> download iTunes preview directly
+    2. If previewUrl is YouTube URL or not provided -> search YouTube and download
     Returns (temp_dir_path, mp3_file_path).
     Caller MUST clean up temp_dir.
     """
     temp_dir = tempfile.mkdtemp(prefix="musicya_")
 
     try:
-        # If no URL provided, search on YouTube
+        # If we have a non-YouTube URL (iTunes preview), download it directly
+        if video_url and "youtube.com" not in video_url.lower() and "youtu.be" not in video_url.lower():
+            mp3_path = await download_itunes_preview(video_url, temp_dir)
+            return temp_dir, mp3_path
+        
+        # Otherwise use YouTube
         if not video_url:
             video_url = await search_youtube_video(artist, title)
-        # If URL provided but not YouTube, search anyway
-        elif "youtube.com" not in video_url.lower() and "youtu.be" not in video_url.lower():
-            video_url = await search_youtube_video(artist, title)
         
-        mp3_path = await ytdlp_download(video_url, temp_dir)
+        mp3_path = await invidious_download(video_url, temp_dir)
         return temp_dir, mp3_path
 
     except Exception:
