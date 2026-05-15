@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import tempfile
 import shutil
@@ -75,13 +76,12 @@ async def cobalt_download(video_url: str, temp_dir: str) -> str:
         # Step 1: Request the download from cobalt
         resp = await client.post(
             COBALT_API,
-            json={
+            data=json.dumps({
                 "url": video_url,
                 "isAudioOnly": True,
-            },
+            }),
             headers={
                 "Content-Type": "application/json",
-                "Accept": "application/json",
             },
             timeout=30,
         )
