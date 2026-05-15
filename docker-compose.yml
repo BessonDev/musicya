@@ -13,7 +13,7 @@ services:
     volumes:
       - yt_cache:/root/.cache/yt-dlp
       # Descomentar y crear cookies.txt en la raíz del proyecto para usar cookies:
-      # - ./cookies.txt:/app/cookies.txt:ro
+      - ./cookies.txt:/app/cookies.txt:ro
     restart: unless-stopped
     networks:
       - musicya
