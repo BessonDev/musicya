@@ -1,5 +1,4 @@
 import httpx
-from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, TIT2, TPE1, TALB, TYER, TCON, APIC, error as MutagenError
 from typing import Optional
 
@@ -17,35 +16,35 @@ def write_id3_tags(
     Write ID3v2.3 tags to an MP3 file using mutagen.
     Cover art is downloaded from cover_url if provided.
     """
+    # Start fresh — delete any existing ID3 tags
     try:
-        audio = MP3(mp3_path, ID3=ID3)
+        existing = ID3(mp3_path)
+        existing.delete()
     except MutagenError:
-        audio = MP3(mp3_path)
-        audio.add_tags()
-
-    # Remove existing tags to start fresh
-    audio.delete()
-    audio.add_tags()
-
+        pass
+    
+    # Create new tags
+    tags = ID3()
+    
     # Text frames
     if title:
-        audio.tags.add(TIT2(encoding=3, text=title))
+        tags.add(TIT2(encoding=3, text=title))
     if artist:
-        audio.tags.add(TPE1(encoding=3, text=artist))
+        tags.add(TPE1(encoding=3, text=artist))
     if album:
-        audio.tags.add(TALB(encoding=3, text=album))
+        tags.add(TALB(encoding=3, text=album))
     if year:
-        audio.tags.add(TYER(encoding=3, text=str(year)))
+        tags.add(TYER(encoding=3, text=str(year)))
     if genre:
-        audio.tags.add(TCON(encoding=3, text=genre))
-
+        tags.add(TCON(encoding=3, text=genre))
+    
     # Cover art (APIC frame)
     if cover_url:
         try:
             cover_data = download_cover(cover_url)
             if cover_data:
                 mime = _detect_mime(cover_data[:4])
-                audio.tags.add(
+                tags.add(
                     APIC(
                         encoding=3,
                         mime=mime,
@@ -56,8 +55,8 @@ def write_id3_tags(
                 )
         except Exception:
             pass  # Cover is optional
-
-    audio.save(v2_version=3)
+    
+    tags.save(mp3_path, v2_version=3)
 
 
 def download_cover(url: str) -> Optional[bytes]:
