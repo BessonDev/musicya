@@ -8,6 +8,7 @@ import httpx
 
 DOWNLOAD_TIMEOUT = 120  # seconds
 COBALT_API = "https://api.cobalt.tools/api/json"
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "")
 
 
 class DownloadError(Exception):
@@ -39,30 +40,34 @@ async def run_cmd(cmd: list[str], timeout: int = DOWNLOAD_TIMEOUT) -> str:
 async def search_youtube_video(artist: str, title: str) -> str:
     """
     Search YouTube for a song and return the first video URL.
-    Uses yt-dlp with --skip-download (only searches, doesn't download).
+    Uses YouTube Data API v3.
     """
-    query = f"ytsearch:{artist} - {title}"
-    result = await run_cmd([
-        "yt-dlp",
-        "--skip-download",
-        "--print", "url",
-        "--default-search", "ytsearch",
-        "--extractor-args", "youtube:player_client=web",
-        "--user-agent",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-        "--geo-bypass",
-        "--extractor-retries", "3",
-        "--ignore-errors",
-        "--", query,
-    ], timeout=30)
+    if not YOUTUBE_API_KEY:
+        raise DownloadError("YOUTUBE_API_KEY no configurada en el servidor")
 
-    lines = result.strip().split("\n")
-    for line in lines:
-        line = line.strip()
-        if line.startswith("http"):
-            return line
+    query = f"{artist} {title}"
+    
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            "https://www.googleapis.com/youtube/v3/search",
+            params={
+                "part": "snippet",
+                "q": query,
+                "type": "video",
+                "maxResults": 1,
+                "key": YOUTUBE_API_KEY,
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
 
-    raise DownloadError("No se encontró ningún video en YouTube para esa canción")
+        items = data.get("items", [])
+        if not items:
+            raise DownloadError("No se encontró ningún video en YouTube para esa canción")
+
+        video_id = items[0]["id"]["videoId"]
+        return f"https://www.youtube.com/watch?v={video_id}"
 
 
 async def cobalt_download(video_url: str, temp_dir: str) -> str:
