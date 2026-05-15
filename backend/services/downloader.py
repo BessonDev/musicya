@@ -13,6 +13,20 @@ DOWNLOAD_TIMEOUT = 120  # seconds
 COBALT_API = "https://api.cobalt.tools/api/json"
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "")
 COOKIES_PATH = os.getenv("COOKIES_FILE", "/app/cookies.txt")
+COOKIES_B64 = os.getenv("COOKIES_B64", "")
+
+
+def _ensure_cookies_file() -> str:
+    """Return path to cookies file, creating it from COOKIES_B64 if needed."""
+    if os.path.exists(COOKIES_PATH):
+        return COOKIES_PATH
+    if COOKIES_B64:
+        path = os.path.join(tempfile.gettempdir(), "musicya_cookies.txt")
+        import base64
+        with open(path, "wb") as f:
+            f.write(base64.b64decode(COOKIES_B64))
+        return path
+    return ""
 
 
 class DownloadError(Exception):
@@ -180,8 +194,10 @@ async def ytdlp_download(video_url: str, temp_dir: str, use_cookies: bool = Fals
         "--js-runtimes", "node",
     ]
     
-    if use_cookies and os.path.exists(COOKIES_PATH):
-        cmd.extend(["--cookies", COOKIES_PATH])
+    if use_cookies:
+        cookies_file = _ensure_cookies_file()
+        if cookies_file:
+            cmd.extend(["--cookies", cookies_file])
     
     cmd.extend(["--", video_url])
     
@@ -281,13 +297,15 @@ async def download_audio(artist: str, title: str, video_url: str | None = None) 
             video_url = await search_youtube_video(artist, title)
         
         # Priority 1: yt-dlp with cookies (most reliable)
-        has_cookies = os.path.exists(COOKIES_PATH)
-        if has_cookies:
+        cookies_file = _ensure_cookies_file()
+        if cookies_file:
             try:
                 mp3_path = await ytdlp_download(video_url, temp_dir, use_cookies=True)
                 return temp_dir, mp3_path
             except Exception as e:
                 logger.warning("yt-dlp con cookies falló: %s", e)
+        else:
+            logger.info("No hay cookies disponibles")
         
         # Priority 2: Invidious
         try:
@@ -297,7 +315,7 @@ async def download_audio(artist: str, title: str, video_url: str | None = None) 
             logger.warning("Invidious falló: %s", e)
         
         # Priority 3: yt-dlp sin cookies (último intento)
-        if not has_cookies:
+        if not cookies_file:
             mp3_path = await ytdlp_download(video_url, temp_dir, use_cookies=False)
             return temp_dir, mp3_path
         
