@@ -1,14 +1,18 @@
 import asyncio
 import json
+import logging
 import os
 import tempfile
 import shutil
 
 import httpx
 
+logger = logging.getLogger("musicya.downloader")
+
 DOWNLOAD_TIMEOUT = 120  # seconds
 COBALT_API = "https://api.cobalt.tools/api/json"
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "")
+COOKIES_PATH = os.getenv("COOKIES_FILE", "/app/cookies.txt")
 
 
 class DownloadError(Exception):
@@ -96,54 +100,31 @@ async def invidious_download(video_url: str, temp_dir: str) -> str:
     for instance in INVIDIOUS_INSTANCES:
         try:
             async with httpx.AsyncClient() as client:
-                # Get video info with streams
-                resp = await client.get(
-                    f"{instance}/api/v1/videos/{video_id}",
-                    params={"fields": "adaptiveFormats"},
-                    timeout=30,
-                )
-                
-                if resp.status_code != 200:
-                    continue
-                
-                data = resp.json()
-                formats = data.get("adaptiveFormats", [])
-                
-                # Find audio-only format (usually has mimeType audio/mp4 or audio/webm)
-                audio_url = None
-                for fmt in formats:
-                    mime_type = fmt.get("mimeType", "")
-                    if "audio" in mime_type.lower():
-                        audio_url = fmt.get("url")
-                        if audio_url:
-                            break
-                
-                if not audio_url:
-                    continue
-                
-                # Download the audio
-                audio_resp = await client.get(audio_url, timeout=180)
-                audio_resp.raise_for_status()
-                
-                # Save temporarily and convert to MP3
-                temp_audio = os.path.join(temp_dir, "audiofile")
-                with open(temp_audio, "wb") as f:
-                    f.write(audio_resp.content)
-                
-                # Convert to MP3
-                await run_cmd([
-                    "ffmpeg",
-                    "-i", temp_audio,
-                    "-codec:a", "libmp3lame",
-                    "-b:a", "320k",
-                    "-y",
-                    output_path,
-                ], timeout=DOWNLOAD_TIMEOUT)
-                
-                if os.path.exists(output_path):
-                    return output_path
+                for itag in ("251", "140"):
+                    url = f"{instance}/latestversion?id={video_id}&itag={itag}"
+                    resp = await client.get(url, timeout=60, follow_redirects=True)
+                    if resp.status_code != 200:
+                        logger.warning("Invidious %s itag %s: HTTP %d", instance, itag, resp.status_code)
+                        continue
                     
-        except Exception:
+                    ext = "opus" if itag == "251" else "m4a"
+                    temp_audio = os.path.join(temp_dir, f"audio.{ext}")
+                    with open(temp_audio, "wb") as f:
+                        f.write(resp.content)
+                    
+                    await run_cmd([
+                        "ffmpeg",
+                        "-i", temp_audio,
+                        "-codec:a", "libmp3lame",
+                        "-b:a", "320k",
+                        "-y",
+                        output_path,
+                    ], timeout=DOWNLOAD_TIMEOUT)
+                    
+                    if os.path.exists(output_path):
+                        return output_path
+        except Exception as e:
+            logger.warning("Invidious %s falló: %s", instance, e)
             continue
     
     raise DownloadError("No se pudo descargar desde ninguna instancia de Invidious")
@@ -181,25 +162,30 @@ async def download_itunes_preview(preview_url: str, temp_dir: str) -> str:
     return mp3_path
 
 
-async def ytdlp_download(video_url: str, temp_dir: str) -> str:
+async def ytdlp_download(video_url: str, temp_dir: str, use_cookies: bool = False) -> str:
     """
     Download audio from YouTube URL using yt-dlp directly.
-    Since we're using the API for search, the URL is known-good.
+    If use_cookies=True and cookies.txt exists, it will be passed to yt-dlp.
     """
     output_template = os.path.join(temp_dir, "%(title)s.%(ext)s")
     
-    # Download best audio and convert to mp3
-    await run_cmd([
+    cmd = [
         "yt-dlp",
         "-f", "bestaudio",
         "--extract-audio",
         "--audio-format", "mp3",
-        "--audio-quality", "0",  # best quality
+        "--audio-quality", "0",
         "-o", output_template,
         "--no-playlist",
         "--js-runtimes", "node",
-        "--", video_url,
-    ], timeout=DOWNLOAD_TIMEOUT)
+    ]
+    
+    if use_cookies and os.path.exists(COOKIES_PATH):
+        cmd.extend(["--cookies", COOKIES_PATH])
+    
+    cmd.extend(["--", video_url])
+    
+    await run_cmd(cmd, timeout=DOWNLOAD_TIMEOUT)
     
     # Find the downloaded file
     mp3_file = None
@@ -294,8 +280,28 @@ async def download_audio(artist: str, title: str, video_url: str | None = None) 
         if not video_url:
             video_url = await search_youtube_video(artist, title)
         
-        mp3_path = await invidious_download(video_url, temp_dir)
-        return temp_dir, mp3_path
+        # Priority 1: yt-dlp with cookies (most reliable)
+        has_cookies = os.path.exists(COOKIES_PATH)
+        if has_cookies:
+            try:
+                mp3_path = await ytdlp_download(video_url, temp_dir, use_cookies=True)
+                return temp_dir, mp3_path
+            except Exception as e:
+                logger.warning("yt-dlp con cookies falló: %s", e)
+        
+        # Priority 2: Invidious
+        try:
+            mp3_path = await invidious_download(video_url, temp_dir)
+            return temp_dir, mp3_path
+        except Exception as e:
+            logger.warning("Invidious falló: %s", e)
+        
+        # Priority 3: yt-dlp sin cookies (último intento)
+        if not has_cookies:
+            mp3_path = await ytdlp_download(video_url, temp_dir, use_cookies=False)
+            return temp_dir, mp3_path
+        
+        raise DownloadError("Todos los métodos de descarga fallaron")
 
     except Exception:
         shutil.rmtree(temp_dir, ignore_errors=True)
