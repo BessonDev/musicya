@@ -295,13 +295,11 @@ async def download_audio(artist: str, title: str, video_url: str | None = None) 
     temp_dir = tempfile.mkdtemp(prefix="musicya_")
 
     try:
-        # If we have a non-YouTube URL (iTunes preview), download it directly
-        if video_url and "youtube.com" not in video_url.lower() and "youtu.be" not in video_url.lower():
-            mp3_path = await download_itunes_preview(video_url, temp_dir)
-            return temp_dir, mp3_path
-        
-        # Otherwise use YouTube
-        if not video_url:
+        # If a YouTube URL was provided directly, use it (skip search)
+        if video_url and ("youtube.com" in video_url.lower() or "youtu.be" in video_url.lower()):
+            pass
+        else:
+            # Ignore non-YouTube URLs (iTunes previews) and search YouTube instead
             video_url = await search_youtube_video(artist, title)
         
         # Priority 1: yt-dlp with cookies (most reliable)
