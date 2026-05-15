@@ -70,9 +70,18 @@ export function SearchInput() {
     setShowHistory(false)
   }, [])
 
+  // Enter para buscar, Escape para cerrar historial
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setShowHistory(false)
+      ;(e.target as HTMLInputElement).blur()
+    }
+  }, [])
+
   const handleClear = useCallback(() => {
     setInputValue('')
     setResults([])
+    setShowHistory(false)
   }, [setResults])
 
   // Posición del botón de historial: al lado del clear o fijo a la derecha
@@ -101,12 +110,15 @@ export function SearchInput() {
           type="text"
           value={inputValue}
           onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
           placeholder="Buscar canciones, artistas, álbumes..."
           className="w-full pl-12 pr-12 py-3 bg-surface border border-border rounded-xl
                      text-foreground placeholder-zinc-500
                      focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary
                      transition-colors duration-200"
           autoFocus
+          inputMode="search"
+          enterKeyHint="search"
         />
 
         <div className="absolute inset-y-0 right-0 pr-2 flex items-center gap-1">

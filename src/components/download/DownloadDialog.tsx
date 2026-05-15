@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Track, DownloadQuality } from '@/types'
 import { formatDuration } from '@/services/normalizer'
 
@@ -10,6 +10,15 @@ interface DownloadDialogProps {
 
 export function DownloadDialog({ track, onConfirm, onCancel }: DownloadDialogProps) {
   const [selectedQuality, setSelectedQuality] = useState<DownloadQuality>(320)
+
+  // Escape cierra el diálogo
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel()
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onCancel])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">

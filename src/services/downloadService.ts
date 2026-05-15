@@ -25,8 +25,15 @@ export async function downloadTrack(
   })
 
   if (!resp.ok) {
-    const err = await resp.json().catch(() => ({ error: 'Error en la descarga' }))
-    throw new Error(err.error || `Error ${resp.status}`)
+    const friendlyMessages: Record<number, string> = {
+      404: 'No se encontró la canción. Probá con otra búsqueda.',
+      429: 'Estás descargando muy rápido. Esperá un momento y volvé a intentar.',
+      504: 'La descarga tardó demasiado. Probá de nuevo.',
+    }
+    const err = await resp.json().catch(() => ({ detail: 'Error en la descarga' }))
+    const statusMsg = friendlyMessages[resp.status]
+    const detailMsg = err.detail || err.error || ''
+    throw new Error(statusMsg || detailMsg || `Error al descargar (${resp.status})`)
   }
 
   onProgress?.(100)

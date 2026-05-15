@@ -36,23 +36,25 @@ export function SearchResults() {
 
   if (!query.trim()) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <svg
-          className="w-16 h-16 text-zinc-600 mb-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
-        <p className="text-zinc-400 text-lg">Busca tu música favorita</p>
-        <p className="text-zinc-500 text-sm mt-1">
-          Encuentra canciones, artistas o álbumes
+      <div className="flex flex-col items-center justify-center px-4 py-16 sm:py-24 text-center">
+        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+          <svg
+            className="w-10 h-10 text-primary/60"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </div>
+        <p className="text-foreground text-xl font-medium mb-2">Busca tu música favorita</p>
+        <p className="text-zinc-500 text-sm max-w-xs">
+          Escribí el nombre de una canción, artista o álbum para empezar
         </p>
       </div>
     )
@@ -60,23 +62,25 @@ export function SearchResults() {
 
   if (results.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <svg
-          className="w-16 h-16 text-zinc-600 mb-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        <p className="text-zinc-400 text-lg">No se encontraron resultados</p>
-        <p className="text-zinc-500 text-sm mt-1">
-          Intenta con otros términos de búsqueda
+      <div className="flex flex-col items-center justify-center px-4 py-16 sm:py-24 text-center">
+        <div className="w-20 h-20 rounded-full bg-zinc-800/50 flex items-center justify-center mb-6">
+          <svg
+            className="w-10 h-10 text-zinc-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </div>
+        <p className="text-foreground text-xl font-medium mb-2">Sin resultados</p>
+        <p className="text-zinc-500 text-sm max-w-xs">
+          No encontramos nada para <span className="text-zinc-400 font-medium">"{query}"</span>. Probá con otros términos.
         </p>
       </div>
     )
@@ -84,8 +88,14 @@ export function SearchResults() {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {results.map((track) => (
-        <ResultCard key={track.id} track={track} />
+      {results.map((track, i) => (
+        <div
+          key={track.id}
+          className="animate-fade-in-up"
+          style={{ animationDelay: `${i * 60}ms` }}
+        >
+          <ResultCard track={track} />
+        </div>
       ))}
     </div>
   )
