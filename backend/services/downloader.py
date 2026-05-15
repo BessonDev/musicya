@@ -71,15 +71,12 @@ async def cobalt_download(video_url: str, temp_dir: str) -> str:
     """
     output_path = os.path.join(temp_dir, "output.mp3")
 
-    async with httpx.AsyncClient() as client:
-        # Step 1: Request download link from cobalt
+async with httpx.AsyncClient() as client:
+        # Step 1: Request the download from cobalt
         resp = await client.post(
             COBALT_API,
             json={
                 "url": video_url,
-                "videoQuality": "audio_only",
-                "audioFormat": "mp3",
-                "filenameStyle": "classic",
                 "isAudioOnly": True,
             },
             headers={
@@ -100,7 +97,7 @@ async def cobalt_download(video_url: str, temp_dir: str) -> str:
         if not download_url:
             raise DownloadError("No se pudo obtener el enlace de descarga")
 
-        # Step 2: Download the actual audio file
+        # Step 2: Download the actual file
         file_resp = await client.get(
             download_url,
             timeout=180,
