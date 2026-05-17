@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from services.stats import get_stats, increment_visits
+from services.stats import get_stats, increment_visits, get_top_songs
 
 router = APIRouter()
 
@@ -13,3 +13,8 @@ async def stats():
 @router.post("/stats/visit")
 async def visit():
     return increment_visits()
+
+
+@router.get("/stats/top-songs")
+async def top_songs():
+    return get_top_songs(limit=10)

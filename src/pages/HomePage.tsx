@@ -3,6 +3,7 @@ import { AudioPlayer } from '@/components/player'
 import { DownloadProgress } from '@/components/download'
 import { Stats } from '@/components/Stats'
 import { RecentDownloads } from '@/components/RecentDownloads'
+import { TopSongs } from '@/components/TopSongs'
 
 /**
  * Página principal con búsqueda y resultados
@@ -65,6 +66,7 @@ export function HomePage() {
         <SearchResults />
         <DownloadProgress />
         <RecentDownloads />
+        <TopSongs />
       </main>
 
       {/* Footer */}
