@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import type { Track, DownloadQuality } from '@/types'
 import { useDownloadStore } from '@/stores/useDownloadStore'
 import { downloadTrack, generateFilename } from '@/services/downloadService'
+import { saveRecentDownload } from '@/services/recentDownloads'
 import { DownloadDialog } from './DownloadDialog'
 
 interface DownloadButtonProps {
@@ -43,6 +44,7 @@ export function DownloadButton({ track, compact = false }: DownloadButtonProps) 
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
 
+      saveRecentDownload(track)
       setStatus('completed')
     } catch (error) {
       console.error('Download error:', error)
