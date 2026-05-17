@@ -7,6 +7,7 @@ from fastapi.responses import Response
 from models.schemas import DownloadRequest, ErrorResponse
 from services.downloader import download_audio, DownloadError
 from services.metadata import write_id3_tags
+from services.stats import increment_downloads
 
 router = APIRouter()
 
@@ -68,7 +69,10 @@ async def download(req: DownloadRequest):
             cover_url=req.coverUrl,
         )
 
-        # 3. Read file into memory, clean up, then return
+        # 3. Increment download counter
+        increment_downloads()
+
+        # 4. Read file into memory, clean up, then return
         filename = f"{_sanitize(req.artist)} - {_sanitize(req.title)}.mp3"
         with open(mp3_path, "rb") as f:
             data = f.read()

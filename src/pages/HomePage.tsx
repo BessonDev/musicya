@@ -1,6 +1,7 @@
 import { SearchInput, SearchResults } from '@/components/search'
 import { AudioPlayer } from '@/components/player'
 import { DownloadProgress } from '@/components/download'
+import { Stats } from '@/components/Stats'
 
 /**
  * Página principal con búsqueda y resultados
@@ -65,10 +66,11 @@ export function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="text-center py-6 px-4 border-t border-border/30">
+      <footer className="text-center py-6 px-4 border-t border-border/30 space-y-2">
         <p className="text-xs text-zinc-600">
           Datos extraídos legítimamente de la iTunes Search API y descargas desde YouTube
         </p>
+        <Stats />
       </footer>
 
       {/* Audio Player Footer */}

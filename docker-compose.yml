@@ -13,6 +13,7 @@ services:
       - COOKIES_B64=${COOKIES_B64:-}
     volumes:
       - yt_cache:/root/.cache/yt-dlp
+      - stats_data:/app/data
     restart: unless-stopped
     networks:
       - musicya
@@ -35,3 +36,4 @@ networks:
 
 volumes:
   yt_cache:
+  stats_data:
