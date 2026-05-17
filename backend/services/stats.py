@@ -13,13 +13,19 @@ from pathlib import Path
 DATA_DIR = Path(os.environ.get("STATS_DIR", "/app/data"))
 DATA_FILE = DATA_DIR / "stats.json"
 
+# Valores acumulados (pre-contador + lo que ya contó)
+INITIAL_VISITS = 264
+INITIAL_DOWNLOADS = 23
+
 _lock = threading.Lock()
 
 
 def _ensure_data():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     if not DATA_FILE.exists():
-        DATA_FILE.write_text(json.dumps({"visits": 0, "downloads": 0}))
+        DATA_FILE.write_text(
+            json.dumps({"visits": INITIAL_VISITS, "downloads": INITIAL_DOWNLOADS})
+        )
 
 
 def get_stats() -> dict:
