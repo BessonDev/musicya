@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import type { Track } from '@/types'
 import { usePlayerStore } from '@/stores/usePlayerStore'
 import { DownloadButton } from '@/components/download'
@@ -16,10 +16,31 @@ interface ResultCardProps {
  * Acá solo interactuamos con el store.
  */
 export function ResultCard({ track }: ResultCardProps) {
+  const [copied, setCopied] = useState(false)
   const { currentTrack, isPlaying, setCurrentTrack } = usePlayerStore()
 
   const isCurrentTrack = currentTrack?.id === track.id
   const isPlayingThis = isCurrentTrack && isPlaying
+
+  const handleShare = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const text = `Escuchá "${track.title}" - ${track.artist} en Musicya → https://musicya.bessondevproject.com`
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Fallback para navegadores sin clipboard API
+      const textarea = document.createElement('textarea')
+      textarea.value = text
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }, [track])
 
   const handlePlayPause = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -123,7 +144,29 @@ export function ResultCard({ track }: ResultCardProps) {
             )}
           </div>
         </div>
-        <DownloadButton track={track} compact />
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleShare}
+            className={`p-2 rounded-lg transition-colors ${
+              copied
+                ? 'bg-green-500/20 text-green-400'
+                : 'bg-surface-hover text-zinc-400 hover:text-zinc-300'
+            }`}
+            title={copied ? '¡Copiado!' : 'Compartir'}
+          >
+            {copied ? (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+            )}
+          </button>
+          <DownloadButton track={track} compact />
+        </div>
       </div>
     </div>
   )
