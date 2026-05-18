@@ -22,25 +22,39 @@ export function ResultCard({ track }: ResultCardProps) {
   const isCurrentTrack = currentTrack?.id === track.id
   const isPlayingThis = isCurrentTrack && isPlaying
 
+  const searchQuery = encodeURIComponent(`${track.artist} ${track.title}`)
+  const shareUrl = `https://musicya.bessondevproject.com/?q=${searchQuery}`
+  const shareText = `Escuchá "${track.title}" de ${track.artist} en Musicya`
+
   const handleShare = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation()
-    const text = `Escuchá "${track.title}" - ${track.artist} en Musicya → https://musicya.bessondevproject.com`
+
+    // Web Share API — muestra WhatsApp, Telegram, etc. en mobile
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: shareText, url: shareUrl })
+        return
+      } catch {
+        // user cancelled — silently ignore
+        return
+      }
+    }
+
+    // Fallback: copiar al portapapeles
+    const fullText = `${shareText}\n${shareUrl}`
     try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      await navigator.clipboard.writeText(fullText)
     } catch {
-      // Fallback para navegadores sin clipboard API
       const textarea = document.createElement('textarea')
-      textarea.value = text
+      textarea.value = fullText
       document.body.appendChild(textarea)
       textarea.select()
       document.execCommand('copy')
       document.body.removeChild(textarea)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
     }
-  }, [track])
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }, [track, searchQuery])
 
   const handlePlayPause = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()

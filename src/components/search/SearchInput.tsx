@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useSearchStore } from '@/stores/useSearchStore'
 import { useDebounce } from '@/hooks/useDebounce'
 import { searchTracks } from '@/services/synkApi'
@@ -7,12 +8,17 @@ import { SearchHistory } from './SearchHistory'
 /**
  * Componente de búsqueda con debounce de 300ms
  * Historial accesible mediante botón toggle
+ * Soporta ?q= desde la URL para búsquedas compartidas
  */
 export function SearchInput() {
-  const [inputValue, setInputValue] = useState('')
+  const [searchParams] = useSearchParams()
+  const initialQuery = searchParams.get('q') || ''
+
+  const [inputValue, setInputValue] = useState(initialQuery)
   const debouncedValue = useDebounce(inputValue, 300)
   const [showHistory, setShowHistory] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const initialDone = useRef(false)
 
   const {
     setResults,
@@ -34,6 +40,25 @@ export function SearchInput() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Búsqueda inicial desde ?q= en la URL (sin debounce)
+  useEffect(() => {
+    if (initialQuery && !initialDone.current) {
+      initialDone.current = true
+      const doInitialSearch = async () => {
+        setLoading(true)
+        setQuery(initialQuery)
+        try {
+          const results = await searchTracks(initialQuery)
+          setResults(results)
+          addToHistory(initialQuery)
+        } catch (err) {
+          setError((err as Error).message || 'Error en la búsqueda')
+        }
+      }
+      doInitialSearch()
+    }
+  }, [initialQuery, setResults, setLoading, setError, setQuery, addToHistory])
 
   // Realizar búsqueda cuando el valor debounced cambia
   useEffect(() => {
