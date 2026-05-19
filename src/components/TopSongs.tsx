@@ -13,7 +13,7 @@ export function TopSongs() {
     fetch('/api/stats/top-songs')
       .then((res) => res.json())
       .then(setSongs)
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   if (!songs || songs.length === 0) return null
@@ -25,7 +25,7 @@ export function TopSongs() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
             d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
         </svg>
-        Más descargadas
+        Top 5 - Más descargadas
       </h3>
 
       <div className="space-y-1">
@@ -35,12 +35,11 @@ export function TopSongs() {
             className="flex items-center gap-3 px-3 py-2 rounded-lg bg-surface/50 hover:bg-surface-hover transition-colors"
           >
             {/* Rank badge */}
-            <span className={`w-6 text-center text-sm font-bold ${
-              i === 0 ? 'text-accent' :
-              i === 1 ? 'text-primary' :
-              i === 2 ? 'text-primary/70' :
-              'text-zinc-600'
-            }`}>
+            <span className={`w-6 text-center text-sm font-bold ${i === 0 ? 'text-accent' :
+                i === 1 ? 'text-primary' :
+                  i === 2 ? 'text-primary/70' :
+                    'text-zinc-600'
+              }`}>
               {i + 1}
             </span>
 
