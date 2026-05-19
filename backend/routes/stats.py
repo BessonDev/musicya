@@ -17,4 +17,4 @@ async def visit():
 
 @router.get("/stats/top-songs")
 async def top_songs():
-    return get_top_songs(limit=10)
+    return get_top_songs(limit=5)
